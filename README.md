@@ -62,6 +62,38 @@ A practical study loop is:
 3. Use a full-length exam periodically to measure readiness under exam-like
    conditions.
 
+Whether you complete every exam or only a subset, include at least a few full and
+short exams from **both generation groups** listed below. This prevents your
+practice from reflecting only one model's question-writing style.
+
+## Exam generation provenance
+
+Each short exam is derived from one of the four 15-question scenario sections in
+its associated full exam. It therefore inherits the generation and review
+provenance of that full exam.
+
+### Claude Fable xhigh, audited and edited by GPT-5.6-Sol max
+
+| Full exam | Associated short exams |
+|---|---|
+| [Practice Exam 1](practice_exams/practice-exam-1.md) | `short-practice-exam-1` through `short-practice-exam-4` |
+| [Practice Exam 2](practice_exams/practice-exam-2.md) | `short-practice-exam-5` through `short-practice-exam-8` |
+| [Practice Exam 3](practice_exams/practice-exam-3.md) | `short-practice-exam-9` through `short-practice-exam-12` |
+| [Practice Exam 4](practice_exams/practice-exam-4.md) | `short-practice-exam-13` through `short-practice-exam-16` |
+| [Practice Exam 5](practice_exams/practice-exam-5.md) | `short-practice-exam-17` through `short-practice-exam-20` |
+
+### GPT-5.6-Sol max
+
+| Full exam | Associated short exams |
+|---|---|
+| [Practice Exam 6](practice_exams/practice-exam-6.md) | `short-practice-exam-21` through `short-practice-exam-24` |
+| [Practice Exam 7](practice_exams/practice-exam-7.md) | `short-practice-exam-25` through `short-practice-exam-28` |
+| [Practice Exam 8](practice_exams/practice-exam-8.md) | `short-practice-exam-29` through `short-practice-exam-32` |
+| [Practice Exam 9](practice_exams/practice-exam-9.md) | `short-practice-exam-33` through `short-practice-exam-36` |
+| [Practice Exam 10](practice_exams/practice-exam-10.md) | `short-practice-exam-37` through `short-practice-exam-40` |
+| [Practice Exam 13](practice_exams/practice-exam-13.md) | `short-practice-exam-41` through `short-practice-exam-44` |
+| [Practice Exam 14](practice_exams/practice-exam-14.md) | `short-practice-exam-45` through `short-practice-exam-48` |
+
 ## Practice exam modes
 
 | | Short practice exam | Full practice exam |
