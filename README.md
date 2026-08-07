@@ -57,10 +57,15 @@ exam conditions.
 
 A practical study loop is:
 
-1. Review a study pack with notes, flashcards, or its untimed quiz.
+1. Review the Exam Guide Gap Pack.
 2. Take short exams and review every missed question.
 3. Use a full-length exam periodically to measure readiness under exam-like
    conditions.
+
+> **Study-pack recommendation:** I recommend the
+> [Exam Guide Gap Pack](study_packs/exam-guide-gap-pack/notes.md). I do not
+> recommend the other study packs for primary exam preparation; they remain in
+> the repository as supplemental reference material.
 
 Whether you complete every exam or only a subset, include at least a few full and
 short exams from **both generation groups** listed below. This prevents your
@@ -153,7 +158,9 @@ the same type instead of offering to resume it.
 ## Study materials
 
 The workspace currently includes eight study packs. Each pack contains detailed
-notes, flashcards, and untimed practice questions.
+notes, flashcards, and untimed practice questions. Of these, only the
+**Exam Guide Gap Pack is recommended for exam preparation**; the other packs are
+included as supplemental references.
 
 | Study pack | Notes |
 |---|---|
