@@ -109,11 +109,14 @@ provenance of that full exam.
 | Feedback | Immediate after a missed answer; timer pauses during review | After submission |
 | Best use | Focused study and fast feedback | Full exam simulation |
 
-Both exam modes and the untimed study-pack quizzes support single-answer and
-multiple-response questions. Questions state how many responses to select, and
-multiple-response items use exact-match scoring. On short exams, correct answers
-receive a brief confirmation without revealing the explanation; missed answers
-receive the full feedback described above.
+All questions in the current full exams, derived short exams, and study-pack
+quizzes are single-select multiple-choice items: exactly one answer can be chosen.
+There are no select-multiple or multiple-response items. This matches the real
+certification exam: according to the
+[exam guide](exam_guide_pdf_v0.2.txt), every question has one correct response and
+three incorrect options. On short exams, correct answers receive a brief
+confirmation without revealing the explanation; missed answers receive the full
+feedback described above.
 
 Answers are saved after every question. Press `Ctrl+C` to leave an attempt and use
 the corresponding `resume` command later. Full and short exams keep independent
