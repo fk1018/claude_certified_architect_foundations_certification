@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/700.css";
+@import "@fontsource/fraunces/900.css";
+@import "@fontsource/fraunces/500-italic.css";
+@import "@fontsource/public-sans/400.css";
+@import "@fontsource/public-sans/500.css";
+@import "@fontsource/public-sans/600.css";
+@import "@fontsource/public-sans/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+
+@theme {
+  --color-ink: #0f1526;
+  --color-ink-2: #171f38;
+  --color-ink-3: #212c4c;
+  --color-bone: #f1ecdd;
+  --color-bone-dim: #d9d2ba;
+  --color-brass: #c6913f;
+  --color-brass-bright: #e0ac57;
+  --color-sage: #6f9c86;
+  --color-ember: #c1594d;
+
+  --font-display: "Fraunces", "Iowan Old Style", serif;
+  --font-body: "Public Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Signature motif: an admission-ticket card with a punched perforation edge,
+   used for track selection, exam list rows, and the results seal. Kept to one
+   component so the "risk" stays contained and everything else stays quiet. */
+.ticket {
+  position: relative;
+  border-radius: 0.6rem;
+  background: linear-gradient(180deg, var(--color-ink-2), var(--color-ink-3));
+  border: 1px solid rgba(241, 236, 221, 0.12);
+}
+
+.ticket::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at 0 50%,
+    var(--color-ink) 0.2rem,
+    transparent 0.22rem
+  );
+  background-size: 100% 1.4rem;
+  background-repeat: repeat-y;
+  opacity: 0.9;
+}
+
+.ticket-stub {
+  border-left: 1px dashed rgba(241, 236, 221, 0.25);
+}
+
+.seal {
+  border: 2px solid var(--color-brass);
+  box-shadow:
+    0 0 0 4px var(--color-ink),
+    0 0 0 5px rgba(198, 145, 63, 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stamp-in {
+    animation: stamp-in 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes stamp-in {
+  from {
+    transform: scale(1.4) rotate(-6deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+}
+
+.prose-notes :where(p) {
+  margin-bottom: 0.9em;
+}
+.prose-notes :where(ul, ol) {
+  margin: 0.4em 0 0.9em 1.1em;
+  list-style: disc;
+}
+.prose-notes :where(ol) {
+  list-style: decimal;
+}
+.prose-notes :where(li) {
+  margin-bottom: 0.3em;
+}
+.prose-notes :where(strong) {
+  color: var(--color-bone);
+  font-weight: 600;
+}
+.prose-notes :where(code) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: rgba(241, 236, 221, 0.08);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25em;
+  color: var(--color-brass-bright);
+}
+.prose-notes :where(h1, h2, h3) {
+  color: var(--color-bone);
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 1em 0 0.4em;
+}
+.prose-notes :where(blockquote) {
+  border-left: 2px solid var(--color-brass);
+  padding-left: 0.9em;
+  color: var(--color-bone-dim);
+}
+
+::selection {
+  background: var(--color-brass);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brass-bright);
+  outline-offset: 2px;
+}
