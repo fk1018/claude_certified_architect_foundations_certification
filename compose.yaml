@@ -10,3 +10,13 @@ services:
     tty: true
     environment:
       TERM: xterm-256color
+
+  ccdvf:
+    extends:
+      service: ccafc
+    entrypoint: ["uv", "run", "--project", "/app/cli", "ccdvf"]
+
+  ccarp:
+    extends:
+      service: ccafc
+    entrypoint: ["uv", "run", "--project", "/app/cli", "ccarp"]
