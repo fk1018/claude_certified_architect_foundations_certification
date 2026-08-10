@@ -1,0 +1,99 @@
+Claude Certified Architect – Professional
+Exam Guide
+Version 1.0 · Effective July 2026 · Exam code: CCAR-P · This guide is subject to change without notice.
+Source: https://anthropic-partners.skilljar.com/claude-certified-architect-professional-certification (exam guide PDF), fetched August 2026.
+
+1. About This Certification
+The Claude Certified Architect – Professional certification validates that an individual can design,
+build, and deliver production-grade AI solutions using Anthropic's Claude platform. It is intended for
+practitioners working in an architect role who select appropriate models, architectures, and API
+patterns; apply prompt and context engineering; integrate Claude into enterprise systems; and
+incorporate evaluation, security, compliance, and governance considerations into their designs.
+
+2. Purpose and Value of the Credential
+Candidates who earn the credential can demonstrate that they are able to:
+- Design and prototype AI-driven solutions that address real business problems
+- Select appropriate models, architectures, and API patterns for specific use cases
+- Implement prompt engineering and context strategies to guide model behavior
+- Integrate Claude into production systems using APIs, orchestration tools, and data pipelines
+- Apply evaluation, monitoring, and observability practices to ensure solution quality
+- Incorporate security, compliance, and governance considerations into system design
+- Collaborate with cross-functional stakeholders and communicate architectural decisions effectively
+
+3. Intended Audience / Minimally Qualified Candidate (MQC)
+Mid- to senior-level solution architects, AI/ML engineers, technical leads, and senior software engineers
+who design, build, and deliver production-grade AI solutions. Recommended: software engineering
+foundation, 3+ years in systems architecture/platform engineering, 6+ months hands-on Claude (or
+comparable LLM) experience in production, experience delivering end-to-end systems from discovery
+through deployment/operationalization. Not intended for entry-level developers or non-technical roles.
+No mandatory prerequisites — Foundations is not required before Professional.
+
+4. Exam Details at a Glance
+Credential: Claude Certified Architect – Professional
+Exam code: CCAR-P
+Number of items: 63
+Item format: Multiple-choice and multiple-response items; each item states how many responses to select
+Time limit: 120 minutes
+Delivery: Proctored, online or test center
+Passing score: Scaled score of 720 on a scale of 100-1,000
+Exam fee: $175 USD
+Validity period: 12 months from the date the credential is awarded
+
+5. Exam Content Outline (Blueprint)
+Domain 1: Solution Design & Architecture — 17%
+  - Translate business problems into Claude-based AI solutions
+  - Design end-to-end architectures (input -> processing -> output -> feedback loops)
+  - Select architectural patterns (workflow, agentic, augmented LLM)
+  - Design multi-agent systems and orchestration strategies
+  - Apply decomposition techniques for complex problem solving
+  - Align solutions to business value pillars (efficiency, transformation, productivity, cost, performance SLAs)
+
+Domain 2: Claude Models, Prompting & Context Engineering — 13%
+  - Select appropriate Claude models based on tradeoffs
+  - Design system prompts, templates, and guardrails
+  - Apply prompt engineering techniques (zero-shot, few-shot, chain-of-thought)
+  - Optimize context windows and manage token usage
+  - Implement prompt reuse strategies (caching, modular prompts, Skills)
+
+Domain 3: Integration — 19% (largest domain)
+  - Evaluate tool/agent configuration for capability bloat
+  - Analyze authentication and authorization requirements to identify security gaps
+  - Evaluate accuracy-latency tradeoffs and justify configuration decisions
+  - Analyze observability challenges and select monitoring strategies at scale
+  - Design a RAG pipeline with appropriate chunking and indexing strategies
+  - Apply retrieval strategies matched to data shape and query pattern
+  - Evaluate connection protocols and select the appropriate integration mechanism (MCP, API/CLI,
+    agent-to-agent)
+  - Evaluate progressive discovery vs. monolithic context strategy
+
+Domain 4: Evaluation, Testing & Optimization — 16%
+  - Define evaluation metrics (accuracy, latency, cost, safety, security)
+  - Design evaluation datasets and test frameworks using mixed methodologies
+  - Conduct A/B testing and iterative improvements
+  - Diagnose system issues (prompt failure, hallucinations, model mismatch)
+  - Optimize token usage, latency, and cost-performance tradeoffs
+  - Monitor system performance using logging and observability tools
+
+Domain 5: Governance, Safety & Risk Management — 14%
+  - Implement guardrails and safety controls
+  - Identify risks, limitations, and failure modes of LLM systems
+  - Apply human-in-the-loop validation strategies
+  - Ensure compliance with regulations (e.g., GDPR, HIPAA, FedRAMP)
+  - Address ethical AI considerations (bias, fairness, transparency)
+
+Domain 6: Stakeholder Communication & Lifecycle Management — 14%
+  - Conduct structured discovery and requirement gathering
+  - Communicate architectural decisions and tradeoffs
+  - Manage stakeholder feedback loops and expectation alignment (including SLAs)
+  - Document architectures and provide implementation guidance
+  - Support lifecycle phases (discovery, design, handoff, monitoring, iteration)
+
+Domain 7: Developer Productivity & Operational Enablement — 7%
+  - Configure Claude tools and environments for teams (e.g., Claude Code)
+  - Improve developer workflows using AI-assisted tooling
+  - Support debugging and operational issue resolution
+
+6. Scoring and Policies
+Criterion-referenced (fixed standard, not curved). Cut score 720/1000. Retake waits: 14/30/90 days after
+1st/2nd/3rd fail; max 4 attempts per rolling 12 months, per exam. Certification valid 12 months; free
+on-time renewal via non-proctored assessment. Closed book, proctored, no AI assistants or notes.

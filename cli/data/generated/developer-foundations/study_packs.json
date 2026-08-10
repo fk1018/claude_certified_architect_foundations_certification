@@ -1,0 +1,801 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-10T03:08:32.466787+00:00",
+  "study_packs": [
+    {
+      "id": "exam-guide-gap-pack",
+      "title": "Exam Guide Gap Pack — Developer: Foundations (CCDV-F)",
+      "source_url": "exam_guide_developer_foundations.txt` (official exam guide v1.0, effective July 2026)",
+      "notes_sections": [
+        {
+          "id": "exam-domain-mapping",
+          "title": "Exam Domain Mapping",
+          "body": "| Domain | Weight | Covered Ideas |\n|---|---|---|\n| D1: Agents and Workflows | 14.7% | Workflow vs. agent decision, manager/supervisor hierarchies, Claude Agent SDK, custom agent loops, hooks, agentic frameworks |\n| D2: Applications and Integration | 33.1% | Requirements/SDLC, Claude API mechanics (messages, tools, streaming, caching, batch), software engineering foundations, cross-interface app design, CLAUDE.md/settings.json config |\n| D3: Claude Code | 3.1% | Rules, Skills, Commands, Agents, Agent Memory, session management, slash commands, headless/auto-mode |\n| D4: Eval, Testing, and Debugging | 2.6% | Error type identification, recovery strategy, trace analysis, integration-layer vs. model-output isolation |\n| D5: Model Selection and Optimization | 16.8% | Tokens/context/sampling, model tiers, thinking modes, cost/token/caching management |\n| D6: Prompt and Context Engineering | 11.0% | Context window management, drift/bloat prevention, prompt engineering, output handling |\n| D7: Security and Safety | 8.1% | Prompt injection, guardrails, hooks, identity/secrets/key management |\n| D8: Tools and MCPs | 10.6% | Tool implementation, MCP server development, built-in vs. custom vs. Skills vs. MCP tradeoffs |"
+        },
+        {
+          "id": "key-concepts",
+          "title": "Key Concepts",
+          "body": "### D1 — Agent Architecture (4.5%)\n\n- Workflow vs. agent: choose a **workflow** (fixed, predetermined sequence of LLM calls and tools) when the task is well-defined and repeatable; choose an **agent** (model decides its own steps) when the path varies by case and intermediate results change what's needed next.\n- Manager/supervisor hierarchies: a coordinator agent delegates to specialized subagents rather than one agent trying to do everything — improves reliability by scoping each agent's tools and context to its role.\n- Subagents improve task execution by isolating verbose or exploratory work (so it doesn't pollute the main context) and by allowing specialization (a narrow, well-scoped agent outperforms one generalist agent with every tool).\n\n### D1 — Agent Construction with Claude (5.3%)\n\n- Claude Agent SDK: the supported path for building production agent loops — handles the tool-use loop (send message → check `stop_reason` → execute tools → return results → repeat until `end_turn`) without hand-rolling it.\n- Custom agent loops/harnesses: hand-rolled alternatives to the SDK; valid when you need control the SDK doesn't expose, but you own the loop's correctness (stop conditions, retry logic, tool dispatch).\n- Managed deployment models: self-hosted (you run the harness and infrastructure) vs. Anthropic-hosted managed agents (Anthropic runs the sandboxed execution environment) — the tradeoff is operational control vs. operational burden.\n- Hooks: deterministic, code-level interception points (e.g., `PreToolUse`, `PostToolUse`) for actions that must happen every time, not just when the model remembers to follow a prompt instruction.\n\n### D1 — Agent Patterns and Frameworks (4.9%)\n\n- Tool-use loop: the core agentic pattern — the model requests a tool, your code executes it, you return the result, the model continues.\n- Memory patterns: scratchpad files or structured state exports let an agent (or a resumed session) recover context across long tasks or crashes without replaying the entire history.\n- Context-window management in agents: prune or summarize tool outputs before they accumulate; isolate exploratory work in subagents so only a summary returns to the main context.\n- Agentic frameworks (Strands, LangGraph, PydanticAI): third-party abstractions over the tool-use loop, graph-based orchestration, or structured-output validation — know what problem each class of framework solves, not implementation trivia.\n\n### D2 — Claude API Mechanics (6.8%)\n\n- Messages API: the core request/response primitive — `messages`, `system`, `tools`, `max_tokens`. Multi-turn conversations are stateless from the API's perspective; your application resends the full message history each turn.\n- Streaming: use for interactive UIs where perceived latency (time-to-first-token) matters; adds complexity (partial JSON, incremental tool-use blocks) that non-interactive/batch workloads don't need.\n- Vision: image inputs are content blocks alongside text in the same message; no separate vision endpoint.\n- Extended thinking: a distinct content block type that must be handled (and typically preserved) separately from the final answer text in multi-turn tool-use conversations.\n- Prompt caching: mark stable, repeated prefixes (system prompt, long reference documents) as cacheable to cut both cost and latency on repeated requests — order matters: static content first, dynamic content last, since only the shared prefix is cacheable.\n- Batch API: asynchronous, high-volume, latency-tolerant (up to 24h window) processing at reduced cost. Cannot execute multi-turn tool calling within a single request — no mid-request pause to run a tool and feed results back. Wrong fit for any interactive or iterative agent loop.\n- Third-party vendor access (Bedrock, Vertex): same model capabilities, different auth/plumbing and sometimes different feature rollout timing — know that the Messages API contract stays conceptually the same across vendors.\n\n### D2 — Software Engineering Foundations (7.4%)\n\n- REST/JSON fundamentals apply directly to designing Claude tool schemas and API wrappers.\n- Async programming: needed for streaming responses and for running multiple tool calls or subagent tasks concurrently without blocking.\n- SDLC integration: where Claude-powered features fit in your existing build/test/review/deploy pipeline, not a separate parallel process.\n- Code review and refactoring at both small scale (single function) and large scale (cross-file, architectural) — Claude Code assists at both, but the review discipline (tests, diff review) doesn't change.\n\n### D2 — Claude Application Design (8.6%)\n\n- Claude behaves differently depending on interface: claude.ai/Desktop chat, Claude Code (repo-aware, tool-using), API/SDK (you control every input). Design decisions (what context to provide, what tools to expose) must match the interface's actual capabilities.\n- Content boundaries: keep untrusted content (retrieved documents, user-submitted text) clearly separated from trusted instructions so the model doesn't treat injected text as a command.\n- Schema design for structured output: nullable/optional fields for data that may legitimately be absent (required fields pressure the model to fabricate); enums with an escape hatch (`\"other\"` + detail, or `\"unclear\"`) for ambiguous real-world input.\n- Session hygiene: don't let one long-running session accumulate unrelated tasks' context; start fresh sessions (or `/compact`) at natural task boundaries.\n- Plugin management: plugins bundle skills/commands/MCP connections for distribution — a packaging and versioning concern, not a new capability class.\n\n### D2 — Configuration Management (4.1%)\n\n- CLAUDE.md hierarchy: user-level (`~/.claude/CLAUDE.md`, personal, never version-controlled) vs. project-level (committed, shared team standards) vs. directory-level (subtree-specific).\n- settings.json: project/user configuration for permissions, tool allowlists, and other CLI behavior — distinct from CLAUDE.md's role as instructional content.\n- Model version pinning: pin a specific model version for reproducibility in production pipelines rather than always floating to \"latest,\" since behavior can shift across releases.\n- Prompt versioning: treat prompts as versioned artifacts (like code) so you can roll back a regression and A/B test changes.\n- Plugin dependencies: plugins can depend on specific tool or MCP availability — a missing dependency should fail predictably, not degrade silently.\n\n### D3 — Claude Code Operation (3.1%)\n\n- Core components: **Rules** (path-scoped conventions via `.claude/rules/` with `paths:` globs), **Skills** (on-demand task-specific workflows in `.claude/skills/`, with frontmatter like `context: fork`, `allowed-tools`, `argument-hint`), **Commands** (custom slash commands), **Agents** (subagent definitions), **Agent Memory** (persisted findings/scratchpad across a session or resumption).\n- Session management: `--resume` to continue a named session; sessions carry their own context and history.\n- Headless mode (`-p`/`--print`): required for any non-interactive/CI invocation — without it, the process waits for interactive input and a CI job hangs.\n- Streaming mode and auto-mode: streaming for incremental output consumption; auto-mode for reduced confirmation prompts in trusted, scripted contexts.\n- CLAUDE.md hierarchy and repository initialization mirror the D2 configuration concepts, applied specifically inside the Claude Code product.\n\n### D4 — Debugging and Error Handling (2.6%)\n\n- Error type identification: distinguish integration-layer errors (your code's API calls, auth, network) from model-output errors (the model produced something wrong or unparseable) before choosing a fix.\n- Recovery strategy selection: transient failures get retried; validation/business-rule failures get surfaced with structured detail, not blindly retried.\n- Trace analysis: read the actual sequence of tool calls, tool results, and model turns to localize where a multi-step agent run diverged from the intended path, rather than guessing from the final output alone.\n\n### D5 — LLM Fundamentals (5.2%)\n\n- Tokens: the unit of both context-window accounting and billing; a rough proxy for cost and latency.\n- Context window: finite; both input and output share the same budget, so long inputs reduce room for output (and vice versa).\n- Sampling and non-determinism: the same prompt can produce different outputs across calls; design evals and tests that tolerate this rather than asserting exact string matches.\n- Model options: fast mode for latency-sensitive/simple tasks; extended thinking / adaptive thinking / effort levels for harder reasoning tasks where you're willing to trade latency and cost for quality.\n- Fundamental prompting techniques: zero-shot (no examples), single-shot (one example), multi-shot/few-shot (several examples) — few-shot generally improves consistency on tasks with a specific desired format or edge-case handling.\n\n### D5 — Model Selection and Tradeoffs (2.7%)\n\n- Opus vs. Sonnet vs. Haiku: roughly capability/cost/latency tiers — Opus for the hardest reasoning, Haiku for high-volume/low-latency simple tasks, Sonnet as the balanced default for most production workloads.\n- Adaptive thinking support varies by model/tier — check before assuming a thinking mode is available for a given deployment.\n- Breaking changes across model releases: pin versions in production and test against a new version before floating to it; don't assume identical behavior across releases even at the \"same\" capability tier.\n\n### D5 — Cost and Token Management (2.8%)\n\n- Token usage tracking: instrument actual token consumption per request/feature to attribute cost, not just estimate from prompt length.\n- Cost modeling: account for input tokens, output tokens, and cache read/write pricing separately — they are not priced the same.\n- Prompt caching / cache checkpointing: reduces cost and latency for repeated stable prefixes; requires deliberately structuring prompts (stable content first) to get cache hits.\n\n### D6 — Context Engineering (3.8%)\n\n- Context window management: actively curate what stays in context rather than letting it grow unbounded.\n- Preventing context drift/bloat: prune or summarize verbose tool outputs before they accumulate; keep only the fields actually needed downstream.\n- Context isolation via subagents/multi-step workflows: route exploratory or verbose sub-tasks to isolated contexts (subagents) so only a distilled result re-enters the main conversation.\n\n### D6 — Prompt Engineering (4.6%)\n\n- Instruction clarity and system vs. user placement: stable, role-defining instructions belong in the system prompt; per-request variable content belongs in user messages.\n- Few-shot examples: the most reliable lever for consistent output format/edge-case handling when prose instructions alone produce drift.\n- Output constraints: explicit format constraints (schemas, enumerated options) reduce variance more reliably than prose asking nicely for a format.\n- Iterative refinement: treat prompts as something you test and version, not something you get right on the first attempt.\n- Input sanitization: treat any user- or retrieval-sourced text inserted into a prompt as potentially adversarial.\n\n### D6 — Output Handling (2.6%)\n\n- Structured output patterns: prefer tool-use/schema-constrained output over parsing free-form text when downstream code needs to consume the result programmatically.\n- Response validation: schema compliance (syntax) does not guarantee semantic correctness — validate business logic (do line items sum correctly, is a referenced ID actually valid) separately.\n- Defensive parsing and skepticism toward confident output: a fluent, confident-sounding response is not evidence of correctness — verify claims against ground truth where it matters.\n\n### D7 — AI Application Security (3.2%)\n\n- Prompt injection: text from an untrusted source (a web page, a user upload) that contains instructions the model might follow as if they came from you. Mitigate by isolating untrusted content from trusted instructions and gating sensitive actions behind guardrails/hooks rather than trusting the model to \"notice\" the injection.\n- Jailbreak defense: layered defenses (system prompt design, guardrails, monitoring) rather than a single prompt-level fix.\n- Untrusted input handling / data leakage prevention / PII handling: minimize what sensitive data enters the prompt at all; redact or tokenize where possible.\n- AAA/CIA: authentication, authorization, confidentiality, privacy, integrity — the standard framework for reasoning about what could go wrong and who should be able to do what.\n\n### D7 — Guardrails and Safe Deployment (2.3%)\n\n- Content policy and guardrail layering: no single guardrail catches everything; combine prompt-level guidance, programmatic gates, and monitoring.\n- Secure-by-design / least privilege: grant an agent only the tools and data access its task actually requires, not the broadest convenient set.\n\n### D7 — Claude Hooks (1.0%)\n\n- Hooks as guardrails: use hooks (not prompt instructions) when a safety rule must be enforced every time, deterministically — e.g., blocking a destructive tool call above a threshold, regardless of what the model \"decides.\"\n\n### D7 — Identity, Secrets, and Key Management (1.6%)\n\n- Never hardcode API keys/credentials in prompts, code committed to version control, or MCP config files — use environment-variable expansion or a secrets manager.\n- Identity validation and authorization checks belong in your application/tool layer, not as something the model is trusted to enforce on its own.\n- Monitor authorized access after the fact (audit logs) as a second layer, not a substitute for access controls.\n\n### D8 — Tool Implementation (4.4%)\n\n- Tool descriptions are the primary mechanism the model uses to select the right tool — vague or overlapping descriptions cause misrouting even with good tool names.\n- Error handling in tools: return structured error metadata (category, retryable flag, human-readable message) rather than opaque failures, so the calling agent can make a sensible recovery decision.\n- Tool usage patterns: client-side tools execute in your application; server-side tools execute where the model runs. Approval patterns (human-in-the-loop confirmation) apply to sensitive actions regardless of where the tool executes.\n- Tool set construction: fewer, well-scoped tools per agent outperform a large generic toolbox — tool-selection reliability degrades as the candidate set grows.\n\n### D8 — MCP Server Development (2.1%)\n\n- MCP servers expose reusable tools/resources/prompts that multiple Claude applications can share and that can be maintained independently of any single app.\n- MCP resources expose content catalogs (so an agent has visibility into available data without exploratory tool calls) distinct from MCP tools (which perform actions).\n- Communication patterns: stdio (local process) vs. sockets/network (remote server) — pick based on where the server needs to run relative to the client.\n\n### D8 — Agentic Customization (4.1%)\n\n- Built-in tools: lowest effort, fixed capability set provided by the platform/product.\n- Custom tools: purpose-built for your specific backend/business logic, defined per application.\n- Skills: on-demand, reusable task workflows (prompt + optional scripts) invoked when needed rather than always loaded.\n- MCPs: reusable, cross-application tool/resource servers maintained independently of any single consuming app.\n- Choosing among them is a reusability/maintenance-boundary decision: one-off and app-specific favors custom tools; shared across many apps/teams favors MCP; occasional structured workflow favors Skills."
+        },
+        {
+          "id": "decision-rules",
+          "title": "Decision Rules",
+          "body": "- If the right sequence of steps varies by case and depends on intermediate results, use an agent, not a fixed workflow.\n- If a rule must hold every single time regardless of what the model decides, enforce it with a hook or programmatic gate — not a prompt instruction.\n- If a subagent needs prior findings, put them explicitly in its prompt; there is no context inheritance from the coordinator.\n- If a task is latency-tolerant, high-volume, and does not need mid-task tool calls, consider the Batch API; if it needs any mid-request tool execution, it cannot use Batch.\n- If output must be consumed programmatically, use tool-use/schema-constrained output, not free-text parsing.\n- If a schema field may legitimately be absent, make it nullable — don't force a value and invite fabrication.\n- If two tools have overlapping descriptions and the model misroutes between them, rewrite the descriptions (purpose, inputs, outputs, when to use each) before adding more prompt instructions.\n- If a CI job hangs, check for missing `-p`/headless mode first.\n- If downstream automation parses CLI output, require `--output-format json` (and `--json-schema` where supported).\n- If credentials would otherwise appear in a config file or prompt, use environment-variable expansion or a secrets manager instead.\n- If an agent's tool set is growing past what its role strictly needs, scope it down or split into specialized agents — larger toolsets degrade selection reliability."
+        },
+        {
+          "id": "anti-patterns",
+          "title": "Anti-Patterns",
+          "body": "- Relying on prompt wording alone to enforce a hard business rule with real consequences.\n- Treating retrieved/untrusted content as trustworthy instructions.\n- Required schema fields for data that may not exist in the source.\n- Uniform, unstructured error messages that give the calling agent nothing to act on.\n- Floating to \"latest model\" in production without re-testing against version-specific behavior changes.\n- Hardcoding secrets in prompts, code, or MCP configuration files.\n- Growing a single agent's toolset indefinitely instead of scoping or splitting responsibilities.\n- Assuming schema-valid output is semantically correct."
+        },
+        {
+          "id": "memorization-cues",
+          "title": "Memorization Cues",
+          "body": "- **Workflow = fixed path. Agent = model decides the path.**\n- **Hooks for guarantees, prompts for guidance.**\n- **Batch API: cheaper, slower, no mid-request tools.**\n- **Nullable beats fabricated.**\n- **Tool descriptions drive routing — fix the description before adding prompt patches.**\n- **`-p` for CI, `--output-format json` for machine parsing.**\n- **Env vars/secrets managers, never hardcoded keys.**\n- **Fewer, well-scoped tools beat one large toolbox.**"
+        },
+        {
+          "id": "source-references",
+          "title": "Source References",
+          "body": "- Exam guide Domain 1–8 content outline and detailed objectives (`exam_guide_developer_foundations.txt`)\n- Exam guide Section 8 sample questions (Batch API, prompt injection, MCP server reusability)"
+        },
+        {
+          "id": "gaps-follow-up",
+          "title": "Gaps / Follow-Up",
+          "body": "- This pack is built from the exam guide's task statements, not hands-on repetition. Pair it with actual API/SDK usage — build one small end-to-end agent exercising tool use, streaming, and at least one guardrail — per the guide's \"How to Prepare\" recommendation.\n- Claude Code specifics (Rules/Skills frontmatter mechanics, `/compact`, Explore subagent) are covered in more depth in the Architect: Foundations workspace's `claude-code-in-action` pack — worth a skim even though Claude Code is only 3.1% of this exam."
+        }
+      ],
+      "flashcards": [
+        {
+          "id": "exam-guide-gap-pack:card:1",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Workflow vs. Agent",
+          "question": "When should you choose a fixed workflow over an agent?",
+          "answer": "When the task is well-defined and repeatable with a predictable sequence of steps. Choose an agent when the right steps vary by case and depend on intermediate results."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:2",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Manager/Supervisor Hierarchy",
+          "question": "Why delegate to specialized subagents instead of using one generalist agent?",
+          "answer": "Scoping each subagent's tools and context to its role improves reliability; a single agent holding every tool and every responsibility degrades tool-selection reliability and clarity of purpose."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:3",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Hooks vs. Prompts",
+          "question": "When must you use a hook instead of a system prompt instruction?",
+          "answer": "When a rule must be enforced deterministically, every time, regardless of what the model decides — e.g., blocking a destructive tool call above a dollar threshold."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:4",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Messages API Statelessness",
+          "question": "Is the Claude Messages API stateful across turns?",
+          "answer": "No. Each request is independent; your application resends the full relevant message history each turn to maintain conversational continuity."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:5",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Prompt Caching Order",
+          "question": "Why does content order matter for prompt caching?",
+          "answer": "Only a shared prefix can be cached. Stable content (system prompt, reference docs) must come first and dynamic content last so the stable prefix is reused across requests."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:6",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Batch API Limitation",
+          "question": "Why can't an iterative \"generate, run, fix, repeat\" loop use the Message Batches API?",
+          "answer": "The Batch API does not support multi-turn tool calling within a request — it cannot pause mid-request to execute a tool and feed results back, which an iterative loop requires."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:7",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Batch API Fit",
+          "question": "What kind of workload is the Batch API designed for?",
+          "answer": "High-volume, latency-tolerant, non-blocking work (e.g., an overnight report over 10,000 documents) — not anything the user is waiting on in real time."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:8",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Schema Nullability",
+          "question": "Why make a structured-output field nullable instead of required, if the underlying data may be absent?",
+          "answer": "A required field pressures the model to fabricate a value when the real answer is \"not present.\" Nullable fields let the model correctly report absence."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:9",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Enum Escape Hatches",
+          "question": "What should you add to an enum field for real-world, ambiguous input?",
+          "answer": "An `\"other\"` value with a detail string, or an `\"unclear\"` value — otherwise the model is forced into an incorrect category for cases the enum didn't anticipate."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:10",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "CLAUDE.md Hierarchy",
+          "question": "Why won't a new teammate's Claude Code sessions follow your team's shared conventions if those conventions only live in `~/.claude/CLAUDE.md`?",
+          "answer": "`~/.claude/CLAUDE.md` is user-level and personal — it's never shared through version control. Team standards must live in a project-level CLAUDE.md committed to the repo."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:11",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Headless Mode in CI",
+          "question": "Why does a Claude Code CI job hang indefinitely?",
+          "answer": "It's missing `-p`/`--print` (headless/non-interactive mode) — without it the process waits for interactive input that a CI runner never provides."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:12",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Machine-Parseable CI Output",
+          "question": "What should a CI pipeline that programmatically consumes Claude Code's findings request?",
+          "answer": "`--output-format json` (with `--json-schema` where supported) for schema-conforming, machine-parseable output instead of parsing prose."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:13",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Skills Frontmatter: context: fork",
+          "question": "What does `context: fork` in a Skill's frontmatter do, and why use it?",
+          "answer": "Runs the skill in an isolated sub-agent context so its verbose or exploratory output doesn't pollute the main conversation — only a summary returns."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:14",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Skills Frontmatter: allowed-tools",
+          "question": "How do you prevent a skill meant only to create files from ever running shell commands?",
+          "answer": "Configure `allowed-tools` in the skill's frontmatter to permit only file-creation operations, making Bash unavailable during that skill's execution."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:15",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Tool Description Quality",
+          "question": "Two tools have near-identical names and descriptions, and the model misroutes between them ~30% of the time. What's the most effective first fix?",
+          "answer": "Rewrite each tool's description to state its distinct purpose, expected inputs/outputs, and when to use it versus the other — description quality is the primary routing signal, not a secondary detail."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:16",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Structured Tool Errors",
+          "question": "Why does returning the same generic `\"Operation failed\"` message for every tool failure hurt an agent's ability to recover?",
+          "answer": "The agent can't distinguish retryable transient failures from permanent business-rule failures without structured metadata (`errorCategory`, `isRetryable`, description) — so it either retries forever or gives up on things that would have succeeded."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:17",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "MCP Server Reusability",
+          "question": "Why build an MCP server instead of hard-coding an internal API's logic into each application's system prompt?",
+          "answer": "An MCP server exposes reusable tools that multiple Claude applications can share and that can be maintained independently of any one app — hard-coded logic in a prompt is neither reusable nor independently maintainable."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:18",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "MCP Resources vs. Tools",
+          "question": "What's the difference between an MCP resource and an MCP tool?",
+          "answer": "Resources expose content/catalogs an agent can read for visibility (e.g., what documents exist) without an action; tools perform actions (e.g., fetch, mutate, call an external system)."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:19",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Built-in vs. Custom vs. Skill vs. MCP",
+          "question": "You need reusable inventory-lookup capability shared across five different Claude applications, maintained by a separate team. Which approach fits best?",
+          "answer": "An MCP server — it's the option built for cross-application reuse and independent maintenance, unlike a custom tool (single-app) or a Skill (workflow-oriented, not typically a shared backend integration)."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:20",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Prompt Injection Definition",
+          "question": "What is prompt injection, in one sentence?",
+          "answer": "Untrusted content (a web page, a user upload) containing instructions that the model might follow as though they came from a trusted source."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:21",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Prompt Injection Mitigation",
+          "question": "What's the most effective mitigation for prompt injection from retrieved web content?",
+          "answer": "Treat retrieved content as untrusted input, keep it separate from trusted instructions, and gate sensitive actions behind guardrails/hooks so injected instructions can't trigger them — not asking the model nicely to ignore injected text."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:22",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Least Privilege for Agents",
+          "question": "A support agent has refund and account-deletion tools it never actually needs for its role. What's the least-privilege fix?",
+          "answer": "Remove those tools from the agent's configuration entirely, rather than just logging their use or adding a confirmation step — eliminate the unnecessary capability, don't just monitor it."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:23",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Secrets in MCP Config",
+          "question": "How should credentials be referenced in an `.mcp.json` file shared via version control?",
+          "answer": "Via environment-variable expansion (e.g., `${API_TOKEN}`), never hardcoded directly in the committed file."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:24",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Token Budget Tradeoff",
+          "question": "What's the practical consequence of the context window being shared between input and output?",
+          "answer": "A very long input leaves less room for a long output (and vice versa) — both draw from the same finite budget."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:25",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Model Tier Selection",
+          "question": "What's the general tradeoff across Opus, Sonnet, and Haiku?",
+          "answer": "Roughly capability/cost/latency tiers — Opus for the hardest reasoning tasks, Haiku for high-volume/low-latency simple tasks, Sonnet as the balanced default for most production workloads."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:26",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Model Version Pinning",
+          "question": "Why pin a specific model version in a production pipeline instead of always using \"latest\"?",
+          "answer": "Behavior can change across model releases even within the same capability tier; pinning gives you reproducibility and a deliberate, tested upgrade path instead of silent behavior drift."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:27",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Few-Shot for Format Consistency",
+          "question": "Detailed prose instructions haven't fixed inconsistent output formatting. What technique is most likely to help?",
+          "answer": "Few-shot examples demonstrating the exact desired output format — concrete examples are more effective than additional prose at pinning down format and edge-case handling."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:28",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Schema-Valid but Wrong",
+          "question": "A tool-use response always parses successfully against its schema, but some field values are semantically wrong (e.g., a line number pointing at the wrong line). What does this tell you?",
+          "answer": "Strict schemas eliminate syntax errors, not semantic errors — you need separate semantic validation layered on top of schema compliance."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:29",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Defensive Parsing",
+          "question": "Why shouldn't a confident-sounding model response be treated as evidence of correctness?",
+          "answer": "Fluency and confidence are not correlated with accuracy — claims that matter should be verified against ground truth, not accepted because the phrasing sounds certain."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:30",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Streaming Use Case",
+          "question": "When does streaming responses matter most?",
+          "answer": "In interactive UIs where perceived latency (time-to-first-token) affects user experience — non-interactive/batch workloads generally don't need it."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:31",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Vision Input Handling",
+          "question": "How are images provided to Claude via the API?",
+          "answer": "As content blocks alongside text within the same message — there is no separate vision-specific endpoint."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:32",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Async Programming Need",
+          "question": "Why does building production Claude applications typically require async programming?",
+          "answer": "To handle streaming responses and to run multiple tool calls or subagent tasks concurrently without blocking the main execution thread."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:33",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Session Hygiene",
+          "question": "Why might you deliberately start a fresh session (or run `/compact`) rather than continuing one long-running session?",
+          "answer": "To avoid one session's context accumulating unrelated tasks and degrading focus/relevance for the current task — natural task boundaries are a good time to reset."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:34",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Client-Side vs. Server-Side Tools",
+          "question": "What's the distinction between a client-side and a server-side tool?",
+          "answer": "Client-side tools execute in your application; server-side tools execute wherever the model itself runs. Approval patterns for sensitive actions apply to either, based on the action's risk, not its execution location."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:35",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Trace Analysis for Debugging",
+          "question": "When a multi-step agent run produces a wrong final result, what's the recommended first debugging step?",
+          "answer": "Read the actual trace of tool calls, tool results, and model turns to localize exactly where the run diverged from the intended path, rather than guessing from the final output alone."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:36",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Cost Modeling Components",
+          "question": "What three token categories should cost modeling account for separately?",
+          "answer": "Input tokens, output tokens, and cache read/write tokens — they are priced differently, so lumping them together produces an inaccurate cost model."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:37",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "AAA/CIA Framework",
+          "question": "What does the AAA/CIA framework help you reason about in application security?",
+          "answer": "Authentication, authorization, confidentiality, privacy, and integrity — the standard lenses for identifying what could go wrong and who should be permitted to do what."
+        }
+      ],
+      "practice_questions": [
+        {
+          "id": "exam-guide-gap-pack:question:1",
+          "number": 1,
+          "scenario": "A team building a customer-support agent wants tool calls to happen only when the model determines they're needed, since request types vary widely and the right sequence of lookups depends on what earlier lookups return.",
+          "scenario_context": "",
+          "prompt": "What is this a textbook case for?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "A fixed workflow with a predetermined call sequence."
+            },
+            {
+              "letter": "B",
+              "text": "An agent, since the required steps vary by case and depend on intermediate results."
+            },
+            {
+              "letter": "C",
+              "text": "The Message Batches API, since support volume is high."
+            },
+            {
+              "letter": "D",
+              "text": "A single tool that combines all lookups into one call."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "High-ambiguity tasks where the right tools and their order depend on intermediate results are the defining case for an agent rather than a fixed workflow — the model needs to decide its own next step.",
+          "distractors": {
+            "A": "A fixed workflow assumes a predictable sequence, which this scenario explicitly lacks.",
+            "C": "Batch API addresses cost/latency for high-volume asynchronous work, not decision variability.",
+            "D": "Combining lookups into one tool doesn't resolve which lookups are needed or in what order."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:2",
+          "number": 2,
+          "scenario": "Company policy requires that any refund above $500 receive human approval. The system prompt states this rule clearly, but production logs show occasional autonomous refunds above the threshold.",
+          "scenario_context": "",
+          "prompt": "What is the most reliable fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Move the rule to the top of the system prompt for higher salience."
+            },
+            {
+              "letter": "B",
+              "text": "Add more few-shot examples showing correct escalation."
+            },
+            {
+              "letter": "C",
+              "text": "Implement a hook that intercepts the refund tool call and blocks any amount above $500."
+            },
+            {
+              "letter": "D",
+              "text": "Lower the model's temperature so it follows instructions more consistently."
+            }
+          ],
+          "correct_choices": [
+            "C"
+          ],
+          "selection_count": 1,
+          "explanation": "A hard business rule with financial consequences needs deterministic, code-level enforcement. A hook that intercepts the tool call and blocks the action is the only option that guarantees the rule holds every time.",
+          "distractors": {
+            "A": "Prompt salience is still probabilistic compliance, which is exactly what's failing.",
+            "B": "Few-shot examples reduce but don't eliminate the failure rate for a rule that must never be violated.",
+            "D": "Lower temperature makes output more consistent, not policy-compliant by guarantee."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:3",
+          "number": 3,
+          "scenario": "An overnight job needs to summarize 8,000 support tickets. Results aren't needed until the next morning, and no step of the job needs the model to call a tool mid-request.",
+          "scenario_context": "",
+          "prompt": "Which approach minimizes cost?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Send every request synchronously in parallel to finish quickly."
+            },
+            {
+              "letter": "B",
+              "text": "Use the Message Batches API."
+            },
+            {
+              "letter": "C",
+              "text": "Use a smaller, less capable model to cut per-token cost."
+            },
+            {
+              "letter": "D",
+              "text": "Reduce max_tokens on every request."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "The Batch API is built for exactly this profile — high-volume, latency-tolerant, non-interactive work with no mid-request tool calls — at meaningfully reduced cost versus synchronous calls.",
+          "distractors": {
+            "A": "Parallel synchronous calls don't reduce per-token cost; they only affect wall-clock time.",
+            "C": "Downsizing the model risks quality without addressing the actual batch-vs-realtime cost lever.",
+            "D": "Truncating output length is unrelated to the batch-eligibility cost savings available here."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:4",
+          "number": 4,
+          "scenario": "A team wants their iterative \"generate code, run tests, fix failures, repeat\" pipeline to use the Message Batches API for its 50% cost savings.",
+          "scenario_context": "",
+          "prompt": "Why won't this work as designed?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "The Batch API doesn't support system prompts."
+            },
+            {
+              "letter": "B",
+              "text": "The Batch API cannot execute a tool mid-request and return results to the model, which this iterative loop requires."
+            },
+            {
+              "letter": "C",
+              "text": "The Batch API's context window is too small for test files."
+            },
+            {
+              "letter": "D",
+              "text": "The 24-hour window is too slow for any use case involving code."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "An iterative generate-run-fix loop is inherently multi-turn tool use — the model needs to see test results before deciding the next fix. The Batch API cannot pause mid-request for that exchange.",
+          "distractors": {
+            "A": "The Batch API does support system prompts; that isn't the limitation here.",
+            "C": "Context window size is unrelated to the multi-turn tool-calling limitation.",
+            "D": "The 24-hour window is a latency tradeoff, not the reason this specific workflow fails — the blocking issue is tool calling mid-request."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:5",
+          "number": 5,
+          "scenario": "A structured-output schema for extracted invoice data requires every field, including \"discount_amount.\" Many invoices have no discount at all, and the model has started inventing small discount values rather than reporting none.",
+          "scenario_context": "",
+          "prompt": "What schema change fixes this?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Make discount_amount nullable so its absence can be reported truthfully."
+            },
+            {
+              "letter": "B",
+              "text": "Add a prompt instruction telling the model not to invent values."
+            },
+            {
+              "letter": "C",
+              "text": "Lower the temperature to reduce the invented values."
+            },
+            {
+              "letter": "D",
+              "text": "Remove the field from the schema entirely."
+            }
+          ],
+          "correct_choices": [
+            "A"
+          ],
+          "selection_count": 1,
+          "explanation": "A required field for data that may legitimately be absent pressures the model to fabricate a plausible-looking value. Making it nullable lets the model correctly report \"not present.\"",
+          "distractors": {
+            "B": "Prompt instructions are probabilistic and the fabrication is already occurring despite whatever instructions exist.",
+            "C": "Temperature affects output variability, not the structural pressure created by a required field.",
+            "D": "Removing the field discards real data for the invoices that do have a discount."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:6",
+          "number": 6,
+          "scenario": "A CI pipeline invokes Claude Code to review pull requests. The job frequently hangs and times out with no visible error.",
+          "scenario_context": "",
+          "prompt": "What is the most likely cause?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "The pipeline is missing `-p`/`--print` (headless mode), so the process is waiting for interactive input."
+            },
+            {
+              "letter": "B",
+              "text": "The review prompt is too long for the context window."
+            },
+            {
+              "letter": "C",
+              "text": "The CI runner lacks network access to reach the model."
+            },
+            {
+              "letter": "D",
+              "text": "The repository is too large for Claude Code to index."
+            }
+          ],
+          "correct_choices": [
+            "A"
+          ],
+          "selection_count": 1,
+          "explanation": "Without headless/non-interactive mode, Claude Code waits for interactive input that a CI runner never provides, which manifests as an indefinite hang rather than a clean error.",
+          "distractors": {
+            "B": "A too-long prompt would typically produce a context-length error, not a silent hang.",
+            "C": "A network access failure would typically surface as a connection error, not a hang waiting on input.",
+            "D": "Repository size affects performance, not this specific hanging failure mode."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:7",
+          "number": 7,
+          "scenario": "A downstream service parses Claude Code's review output with regex to post inline PR comments, and the parser breaks whenever the output format drifts slightly.",
+          "scenario_context": "",
+          "prompt": "What is the robust fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Harden the regex with more permissive fallback patterns."
+            },
+            {
+              "letter": "B",
+              "text": "Instruct the model more strongly to never deviate from the format."
+            },
+            {
+              "letter": "C",
+              "text": "Run with `--output-format json` and a `--json-schema` defining the findings structure."
+            },
+            {
+              "letter": "D",
+              "text": "Post the entire raw output as a single comment."
+            }
+          ],
+          "correct_choices": [
+            "C"
+          ],
+          "selection_count": 1,
+          "explanation": "Schema-constrained JSON output is machine-parseable by construction, removing the fragile dependency on prose formatting staying stable across runs.",
+          "distractors": {
+            "A": "Regex hardening is reactive and will keep breaking as format drifts continue.",
+            "B": "Prompt-level formatting instructions are probabilistic, which is exactly why the parser keeps breaking.",
+            "D": "Posting raw text abandons the requirement for structured, parseable inline comments."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:8",
+          "number": 8,
+          "scenario": "Two tools, `analyze_content` (\"Analyzes content and returns insights\") and `analyze_document` (\"Analyzes documents and returns findings\"), are frequently confused by the model, which calls the wrong one roughly 30% of the time.",
+          "scenario_context": "",
+          "prompt": "What is the most effective first fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Rename and rewrite each tool's description to state its distinct purpose, inputs, outputs, and when to use it versus the other."
+            },
+            {
+              "letter": "B",
+              "text": "Add a system prompt rule defaulting to `analyze_document` when uncertain."
+            },
+            {
+              "letter": "C",
+              "text": "Remove one of the two tools."
+            },
+            {
+              "letter": "D",
+              "text": "Add a post-hoc hook that corrects misrouted calls."
+            }
+          ],
+          "correct_choices": [
+            "A"
+          ],
+          "selection_count": 1,
+          "explanation": "Tool descriptions are the primary signal the model uses for tool selection. Near-identical descriptions cause misrouting regardless of tool names, so clarifying purpose and use cases addresses the root cause.",
+          "distractors": {
+            "B": "A default masks ambiguity rather than resolving it, and will be wrong whenever the other tool was actually correct.",
+            "C": "Removing a tool may discard functionality that's genuinely needed.",
+            "D": "Correcting misroutes after the fact requires its own routing logic — the very capability that's broken."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:9",
+          "number": 9,
+          "scenario": "An agent's tool descriptions are excellent, but a system prompt line reads \"use lookup_order to help with any customer question about their purchases.\" The agent now calls lookup_order even for general policy questions with no order involved.",
+          "scenario_context": "",
+          "prompt": "What is the most likely fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Rewrite the lookup_order tool description to state it requires an order in context."
+            },
+            {
+              "letter": "B",
+              "text": "Add few-shot examples of policy questions being answered without any tool call."
+            },
+            {
+              "letter": "C",
+              "text": "Remove or reword the sweeping system prompt instruction that is creating an unintended association."
+            },
+            {
+              "letter": "D",
+              "text": "Rename the tool so the model understands an ID is required."
+            }
+          ],
+          "correct_choices": [
+            "C"
+          ],
+          "selection_count": 1,
+          "explanation": "A keyword-sensitive system prompt instruction can override even good tool descriptions by creating an unintended, sweeping association. Fixing the instruction at the source resolves the actual cause.",
+          "distractors": {
+            "A": "The tool description isn't the problem — the system prompt instruction is overriding it.",
+            "B": "Few-shot examples add token overhead to work around an instruction that can simply be corrected.",
+            "D": "Renaming doesn't remove the instruction causing the association."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:10",
+          "number": 10,
+          "scenario": "A tool implementation returns the string `\"Operation failed\"` for every possible failure, from a validation error to a transient network timeout.",
+          "scenario_context": "",
+          "prompt": "What should change so the calling agent can recover sensibly?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Wrap every tool call in an automatic 3x retry policy at the application layer."
+            },
+            {
+              "letter": "B",
+              "text": "Return structured error metadata including an error category, a retryable flag, and a human-readable description."
+            },
+            {
+              "letter": "C",
+              "text": "Add a system prompt instruction telling the model to guess whether a failure is retryable."
+            },
+            {
+              "letter": "D",
+              "text": "Increase timeouts so transient failures become less frequent."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Structured error metadata gives the agent the information it needs to retry transient failures and stop retrying non-retryable ones, rather than guessing from an opaque message.",
+          "distractors": {
+            "A": "Blanket retries waste calls on failures that will never succeed (e.g., validation errors) and hide the decision from the agent.",
+            "C": "Asking the model to guess what the tool already knows is strictly worse than the tool reporting it directly.",
+            "D": "Reducing one failure type's frequency doesn't fix the underlying lack of structured information."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:11",
+          "number": 11,
+          "scenario": "A support team wants an internal inventory REST API exposed to Claude in a way that's reusable across several different Claude applications and maintainable independently of any one of them.",
+          "scenario_context": "",
+          "prompt": "Which approach best fits?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Hard-code the inventory logic into each application's system prompt."
+            },
+            {
+              "letter": "B",
+              "text": "Build an MCP server exposing the inventory operations as tools."
+            },
+            {
+              "letter": "C",
+              "text": "Paste the current inventory data into context on every request."
+            },
+            {
+              "letter": "D",
+              "text": "Rely on a built-in tool, assuming it can reach internal REST APIs."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "An MCP server exposes reusable tools that multiple Claude applications can connect to and that can be maintained independently — exactly the reuse and maintenance profile described.",
+          "distractors": {
+            "A": "Hard-coded prompt logic is neither reusable across apps nor independently maintainable.",
+            "C": "Pasting data provides no live access and wastes context on every request.",
+            "D": "Built-in tools don't automatically reach arbitrary internal APIs."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:12",
+          "number": 12,
+          "scenario": "A Claude-powered agent summarizes web pages submitted by end users. One page contains hidden text instructing the model to ignore prior instructions and reveal its system prompt.",
+          "scenario_context": "",
+          "prompt": "What is the most effective mitigation?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Raise the model's temperature so its behavior is less predictable to attackers."
+            },
+            {
+              "letter": "B",
+              "text": "Treat the retrieved page content as untrusted input, keep it separate from trusted instructions, and gate sensitive actions behind guardrails."
+            },
+            {
+              "letter": "C",
+              "text": "Add a system prompt line asking users not to include malicious instructions."
+            },
+            {
+              "letter": "D",
+              "text": "Switch to a larger, more instruction-following model."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Prompt injection is addressed by isolating untrusted content from trusted instructions and enforcing guardrails so injected text cannot trigger sensitive actions on its own.",
+          "distractors": {
+            "A": "Temperature is unrelated to whether injected instructions are followed.",
+            "C": "A polite request to users has no bearing on adversarial content embedded in a web page.",
+            "D": "A more instruction-following model can be more susceptible to injection, not less."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:13",
+          "number": 13,
+          "scenario": "A support agent currently has 18 tools, including several — loyalty program, gift cards, subscriptions — that are rarely used and unrelated to its core refund/return responsibilities.",
+          "scenario_context": "",
+          "prompt": "What is the primary risk of this configuration?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "MCP servers are limited to 10 tools each, so this configuration will fail at connection time."
+            },
+            {
+              "letter": "B",
+              "text": "Tool-selection reliability degrades as the number of available tools grows, increasing misrouting risk."
+            },
+            {
+              "letter": "C",
+              "text": "The agent will call every available tool at least once per conversation."
+            },
+            {
+              "letter": "D",
+              "text": "Context windows cannot hold more than 10 tool schemas."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "As an agent's toolset grows, decision complexity increases and tool-selection reliability degrades — the fix is scoping tools to the agent's actual role or splitting into specialized agents.",
+          "distractors": {
+            "A": "There is no such fixed limit on MCP server tool counts.",
+            "C": "Agents don't call every available tool by default; that isn't how tool selection works.",
+            "D": "Tool schema token cost scales with tool count but isn't capped at 10."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:14",
+          "number": 14,
+          "scenario": "A batch job caches a long, stable system prompt and reference document across thousands of near-identical requests that each add a short, varying user question at the end.",
+          "scenario_context": "",
+          "prompt": "What ordering maximizes the benefit of prompt caching?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Place the varying user content first so it's processed immediately."
+            },
+            {
+              "letter": "B",
+              "text": "Place the stable system prompt and reference document first, with the varying content last."
+            },
+            {
+              "letter": "C",
+              "text": "Alternate stable and varying content throughout the prompt."
+            },
+            {
+              "letter": "D",
+              "text": "Ordering doesn't matter for prompt caching."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Prompt caching only reuses a shared prefix. Placing stable content first and dynamic content last maximizes the portion of the prompt that can be served from cache across requests.",
+          "distractors": {
+            "A": "Putting variable content first breaks any shared prefix, defeating caching entirely.",
+            "C": "Alternating content prevents a consistent cacheable prefix from forming.",
+            "D": "Ordering is precisely what determines how much of the prompt is cacheable."
+          }
+        }
+      ]
+    }
+  ]
+}

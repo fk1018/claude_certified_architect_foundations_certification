@@ -6,7 +6,7 @@ from itertools import groupby
 from pathlib import Path
 
 from ccafc_cli.models import Flashcard, NoteSection, PracticeExam, Question, StudyPack
-from ccafc_cli.paths import PRACTICE_EXAMS_DIR, STUDY_PACKS_DIR
+from ccafc_cli.paths import PRACTICE_EXAMS_DIR, STUDY_PACKS_DIR, TRACK_LABEL
 
 
 HEADING_RE = re.compile(r"(?m)^##\s+(.+?)\s*$")
@@ -298,7 +298,7 @@ def build_short_practice_exams(full_exams: list[PracticeExam]) -> list[PracticeE
             short_exams.append(
                 PracticeExam(
                     id=short_id,
-                    title=f"CCAFC Short Practice Exam {short_number}",
+                    title=f"{TRACK_LABEL} Short Practice Exam {short_number}",
                     time_limit_minutes=SHORT_EXAM_TIME_LIMIT_MINUTES,
                     passing_score=SHORT_EXAM_PASSING_SCORE,
                     total_questions=SHORT_EXAM_QUESTION_COUNT,

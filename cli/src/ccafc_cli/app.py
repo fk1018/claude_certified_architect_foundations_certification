@@ -23,12 +23,13 @@ from ccafc_cli.flows import (
     start_quiz,
     start_short_exam,
 )
+from ccafc_cli.paths import TRACK_NAME
 from ccafc_cli.storage import generate_data
 from ccafc_cli.ui import console, select_one
 
 
 app = typer.Typer(
-    help="Study tools for the Claude Certified Architect Foundations certification.",
+    help=f"Study tools for the {TRACK_NAME} certification.",
     invoke_without_command=True,
 )
 exam_app = typer.Typer(help="Timed practice exam workflows.")

@@ -1,0 +1,708 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-10T03:08:33.548160+00:00",
+  "study_packs": [
+    {
+      "id": "exam-guide-gap-pack",
+      "title": "Exam Guide Gap Pack — Architect: Professional (CCAR-P)",
+      "source_url": "exam_guide_architect_professional.txt` (official exam guide v1.0, effective July 2026)",
+      "notes_sections": [
+        {
+          "id": "exam-domain-mapping",
+          "title": "Exam Domain Mapping",
+          "body": "| Domain | Weight | Covered Ideas |\n|---|---|---|\n| D1: Solution Design & Architecture | 17% | Translating business problems into solutions, end-to-end architecture, workflow/agentic/augmented-LLM patterns, multi-agent orchestration, decomposition, business value alignment |\n| D2: Claude Models, Prompting & Context Engineering | 13% | Model selection tradeoffs, system prompts/templates/guardrails, prompting techniques, context/token optimization, prompt reuse (caching, modular prompts, Skills) |\n| D3: Integration | 19% | Tool/agent capability bloat, auth/authz gaps, accuracy-latency tradeoffs, observability at scale, RAG pipeline design, retrieval strategy, connection protocol selection (MCP/API/agent-to-agent), progressive discovery vs. monolithic context |\n| D4: Evaluation, Testing & Optimization | 16% | Eval metrics, dataset/test-framework design, A/B testing, diagnosing failure modes, cost/latency optimization, observability tooling |\n| D5: Governance, Safety & Risk Management | 14% | Guardrails, LLM risk/failure modes, human-in-the-loop, regulatory compliance (GDPR/HIPAA/FedRAMP), ethical AI (bias/fairness/transparency) |\n| D6: Stakeholder Communication & Lifecycle Management | 14% | Discovery/requirements gathering, communicating tradeoffs, stakeholder feedback/SLA alignment, documentation, lifecycle phase support |\n| D7: Developer Productivity & Operational Enablement | 7% | Configuring team tooling (Claude Code), AI-assisted workflow improvement, debugging/operational support |"
+        },
+        {
+          "id": "key-concepts",
+          "title": "Key Concepts",
+          "body": "### D1 — Solution Design & Architecture\n\n- Translating a business problem into a Claude-based solution starts with the business value pillar it serves (efficiency, transformation, productivity, cost, or a performance SLA) — the architecture should be traceable back to that value, not just \"we added AI.\"\n- End-to-end architecture reasoning: input → processing → output → feedback loop. A design missing the feedback loop can't improve after deployment; treat it as a first-class architectural component, not an afterthought.\n- Architectural pattern selection:\n  - **Workflow**: fixed, predetermined sequence of LLM calls and tools — pick when the task is well-defined and repeatable.\n  - **Agentic**: the model determines its own steps — pick when the path varies by case and depends on intermediate results.\n  - **Augmented LLM**: a single LLM call enhanced with tools/retrieval but without multi-step autonomous orchestration — pick for simpler augmentation needs that don't warrant full agent overhead.\n- Multi-agent systems and orchestration: a coordinator/supervisor delegates to specialized subagents. Route all inter-subagent communication through the coordinator (hub-and-spoke) for observability, consistent error handling, and controlled information flow — direct subagent-to-subagent channels sacrifice all three.\n- Decomposition techniques: break a complex problem into subtasks whose combined coverage matches the full scope. A common failure mode is narrow decomposition — every subagent succeeds, but the decomposition itself omitted whole subdomains, and the fix is decomposition breadth, not subagent tuning.\n- Business value alignment: the same technical solution can be justified on efficiency (do the same work with less cost) or transformation (do previously-impossible work) grounds — get explicit about which value pillar is the case for a given investment, since it changes what \"success\" measures should be.\n\n### D2 — Claude Models, Prompting & Context Engineering\n\n- Model selection tradeoffs: capability, cost, and latency move together — Opus-tier for the hardest reasoning, Haiku-tier for high-volume/low-latency simple tasks, Sonnet-tier as the balanced default. An architect's job is matching the tier to the task's actual difficulty, not defaulting to the most capable model everywhere.\n- System prompts, templates, and guardrails: system prompts define role and constraints; templates standardize prompt structure across a product surface; guardrails layer programmatic checks on top of prompt-level guidance for anything that must hold reliably.\n- Prompting techniques: zero-shot (no examples) for simple, well-understood tasks; few-shot for tasks needing consistent formatting or edge-case handling; chain-of-thought for tasks benefiting from explicit intermediate reasoning steps.\n- Context window and token optimization: a long static system prompt and reference document repeated on every request is a caching opportunity, not just a cost line item — ordering stable content first and enabling prompt caching reduces both latency (time-to-first-token) and per-request cost.\n- Prompt reuse strategies: caching (stable prefixes), modular prompts (composable, versioned prompt fragments), and Skills (on-demand reusable workflows) are three different reuse mechanisms solving different problems — caching is a cost/latency lever, modular prompts are a maintainability lever, Skills are a capability-packaging lever.\n\n### D3 — Integration\n\n- Tool/agent capability bloat: as an agent's toolset grows past what its role needs, tool-selection reliability degrades. Evaluate configurations for unnecessary capability and scope tools to role, or split into specialized agents.\n- Authentication and authorization gap analysis: apply least privilege — remove capabilities a role doesn't need rather than only logging or confirming their use. A tool an agent doesn't need is an attack surface, not a convenience.\n- Accuracy-latency tradeoffs: more retrieval, more verification steps, or a larger model generally buys accuracy at the cost of latency (and money). Justify the chosen point on that curve against the actual SLA, not a default assumption that \"more accurate is always better.\"\n- Observability at scale: logging every raw prompt/response for a high-volume production system is not itself an observability strategy — select monitoring approaches (sampling, structured event logging, aggregate quality metrics) that scale with volume without drowning the team in unreviewable data.\n- RAG pipeline design: chunking strategy and indexing strategy must match the data's shape — long-form documents need different chunking than structured records or short FAQ entries. A retrieval strategy that ignores data shape produces irrelevant or fragmented context.\n- Retrieval strategy matched to query pattern: exact-lookup queries favor structured/metadata filtering; conceptual/semantic queries favor embedding similarity search; hybrid queries often need both.\n- Connection protocol selection: MCP for reusable, cross-application tool/resource access; direct API/CLI integration for tightly-coupled, single-application needs; agent-to-agent protocols when multiple autonomous systems (potentially from different vendors or teams) need to collaborate without a shared codebase.\n- Progressive discovery vs. monolithic context: progressive discovery (expose a catalog/resource an agent queries as needed) scales better than dumping an entire dataset or tool schema set into context up front, especially as the underlying data or tool set grows.\n\n### D4 — Evaluation, Testing & Optimization\n\n- Evaluation metrics span more than accuracy: latency, cost, safety, and security must be defined and tracked as first-class metrics alongside correctness — a solution that's accurate but too slow, too expensive, or unsafe still fails.\n- Evaluation dataset and test framework design: use mixed methodologies — automated metric-based evals for scale, human review for nuanced judgment, and adversarial/red-team test cases for safety-critical paths. No single method covers every failure mode.\n- A/B testing and iterative improvement: change one variable at a time (a prompt, a model tier, a retrieval strategy) against a stable baseline so you can attribute observed differences correctly.\n- Diagnosing system issues: distinguish prompt failure (the instructions were unclear or contradictory), hallucination (the model asserted something false confidently), and model mismatch (the wrong capability tier for the task) — each has a different fix, and treating all three the same way wastes iteration cycles.\n- A confident-but-wrong answer appearing after a document refresh, with model and latency unchanged, points first at the retrieval/indexing layer (stale or broken embeddings/index), not the model.\n- Cost-performance optimization: token usage, latency, and cost tradeoffs should be optimized against the actual SLA and budget, not minimized in isolation — the cheapest, fastest configuration that fails the accuracy bar isn't a win.\n- Monitoring: production logging and observability tooling should surface drift (quality degrading over time) and outliers, not just aggregate averages that can hide a failing segment.\n\n### D5 — Governance, Safety & Risk Management\n\n- Guardrails and safety controls: layer multiple defenses (prompt-level guidance, programmatic gates/hooks, monitoring) rather than relying on any single layer to catch everything.\n- Risk, limitation, and failure-mode identification: know the standard LLM failure modes (hallucination, prompt injection, inconsistent output, context loss/drift) and design mitigations for each as part of the architecture, not as an afterthought once something breaks in production.\n- Human-in-the-loop (HITL) validation: apply HITL where the cost of an error is high or where judgment genuinely requires human context (e.g., approving refunds over a threshold, medical or legal determinations) — not as a blanket requirement on every model output, which defeats the purpose of automation.\n- Regulatory compliance: GDPR (EU data protection/privacy), HIPAA (US healthcare data), FedRAMP (US federal cloud security authorization) are examples of regimes that constrain what data can be sent where, retained how long, and processed under what controls — compliance requirements shape architecture decisions (data residency, retention, access logging) before feature design, not after.\n- Ethical AI considerations: bias, fairness, and transparency are architecture concerns — e.g., whether training/eval data reflects the population the system serves, whether decisions are explainable to affected users, and whether disparate impact is measured, not just assumed absent.\n\n### D6 — Stakeholder Communication & Lifecycle Management\n\n- Structured discovery and requirements gathering: elicit both explicit requirements (what stakeholders say they need) and implicit constraints (compliance, existing systems, org politics) before committing to an architecture.\n- Communicating architectural decisions and tradeoffs: stakeholders need the tradeoff, not just the decision — e.g., \"we chose Sonnet over Opus for this path, trading some capability for a 3x latency improvement that meets the SLA\" is more useful than \"we chose Sonnet.\"\n- Managing stakeholder feedback loops and SLA alignment: set and revisit explicit SLAs (accuracy thresholds, latency targets, cost ceilings) with stakeholders rather than letting \"good enough\" be implicitly renegotiated after the fact.\n- Documentation and implementation guidance: architecture documentation should let another engineer implement or extend the system without re-deriving the reasoning behind each decision — capture the \"why,\" not just the \"what.\"\n- Lifecycle phase support: discovery → design → handoff → monitoring → iteration. An architect's responsibility doesn't end at handoff — monitoring and iteration based on production signal are part of the lifecycle, not a separate team's problem.\n\n### D7 — Developer Productivity & Operational Enablement\n\n- Configuring Claude tools and environments for teams: standardizing CLAUDE.md, settings.json, and shared MCP configuration across a team reduces inconsistent behavior and onboarding friction — this is an architectural responsibility, not just individual developer preference.\n- Improving developer workflows with AI-assisted tooling: identify where Claude Code or similar tooling removes real friction (repetitive refactors, codebase exploration, test generation) versus where it adds review overhead that exceeds the time saved.\n- Supporting debugging and operational issue resolution: architects should be able to read traces/logs from production Claude-powered systems to localize whether an incident is an integration-layer problem, a model-output problem, or a data/retrieval problem — the same triage skill developers use, applied at a systems level."
+        },
+        {
+          "id": "decision-rules",
+          "title": "Decision Rules",
+          "body": "- If the task is well-defined and repeatable, use a workflow; if the right steps vary by case and depend on intermediate results, use an agent; if you just need to augment one LLM call with tools/retrieval, an augmented LLM pattern may be enough — don't reach for full multi-agent orchestration by default.\n- If subagents all succeed but the final output still misses whole subdomains, fix the coordinator's decomposition breadth, not the subagents.\n- If a hard rule (financial, safety, compliance) must hold every time, enforce it with a guardrail/hook, not a prompt instruction alone.\n- If an agent's tools include capabilities its role doesn't need, remove them — don't just add logging or confirmation steps.\n- If retrieval quality suddenly degrades after a document/data refresh with model and latency unchanged, investigate the indexing/retrieval layer first.\n- If observability at scale means \"log everything raw,\" redesign toward sampling and structured, aggregable signals instead.\n- If a compliance regime applies (GDPR/HIPAA/FedRAMP), resolve data residency/retention/access-control requirements before finalizing the architecture, not after.\n- If an error's cost is high or requires human judgment, apply human-in-the-loop specifically there — not everywhere, which defeats automation's value.\n- If communicating a decision to stakeholders, state the tradeoff, not just the choice.\n- If a document/data source shows aggregate accuracy but you're deciding whether to cut human review, check accuracy per segment (document type, field, use case) before trusting the aggregate."
+        },
+        {
+          "id": "anti-patterns",
+          "title": "Anti-Patterns",
+          "body": "- Defaulting to full multi-agent orchestration for tasks that a single augmented LLM call or a fixed workflow would handle more simply and reliably.\n- Justifying an architecture as \"we added AI\" without tracing it to a specific business value pillar or measurable outcome.\n- Direct subagent-to-subagent communication that bypasses the coordinator.\n- Relying on prompt-level instructions alone for compliance- or safety-critical rules.\n- Growing an agent's toolset indefinitely instead of scoping to role.\n- Treating \"more accurate\" as free — ignoring the latency/cost tradeoff against the actual SLA.\n- Logging raw prompts/responses at scale and calling it an observability strategy.\n- Applying human-in-the-loop everywhere as a blanket safety measure, defeating automation's purpose.\n- Treating compliance as a post-launch checklist item rather than an architecture input.\n- Trusting an aggregate accuracy number without segment-level validation before reducing human review.\n- Documenting only the final architecture without the reasoning (\"why\") behind key decisions."
+        },
+        {
+          "id": "scenario-traps",
+          "title": "Scenario Traps",
+          "body": "- \"Add another subagent\" when the real problem is coordinator decomposition breadth or capability bloat in an existing agent — more agents isn't automatically better architecture.\n- \"Switch to a bigger/more capable model\" for problems actually caused by retrieval, context management, or prompt clarity — model tier is not a universal fix.\n- \"Full audit logging\" presented as an observability solution at scale — raw logs alone don't scale into an actionable monitoring strategy.\n- \"Require human approval on every output\" presented as the safe governance choice — the exam wants targeted HITL matched to error cost/judgment need, not blanket friction.\n- A stakeholder-communication question where the \"technically correct\" answer omits the tradeoff explanation — the Professional exam rewards communicating tradeoffs, not just correct technical calls."
+        },
+        {
+          "id": "memorization-cues",
+          "title": "Memorization Cues",
+          "body": "- **Workflow = fixed. Agent = adaptive. Augmented LLM = single call + tools/retrieval, no orchestration.**\n- **Hub-and-spoke: all subagent traffic through the coordinator.**\n- **Decomposition breadth, not subagent tuning, fixes coverage gaps.**\n- **Guardrails/hooks for guarantees; prompts for guidance.**\n- **Retrieval/indexing is the first suspect after a data refresh breaks accuracy.**\n- **Sample and structure observability data — don't just log everything raw.**\n- **Compliance shapes architecture before feature design, not after.**\n- **HITL where error cost or judgment is high — not everywhere.**\n- **Communicate the tradeoff, not just the decision.**\n- **Segment before you trust the aggregate.**"
+        },
+        {
+          "id": "source-references",
+          "title": "Source References",
+          "body": "- Exam guide Domain 1–7 content outline and detailed objectives (`exam_guide_architect_professional.txt`)\n- Exam guide Section 8 sample questions (least privilege, prompt caching for latency/cost, retrieval regression diagnosis)"
+        },
+        {
+          "id": "gaps-follow-up",
+          "title": "Gaps / Follow-Up",
+          "body": "- This pack is doctrine from the guide's task statements, not hands-on repetition. The guide's own preparation recommendation — build and operate at least one end-to-end Claude solution including RAG, evaluation, and observability — is the single highest-leverage follow-up activity.\n- Deeper mechanics of prompt caching, hooks, and MCP protocol details overlap with the Developer: Foundations gap pack (`study_packs_developer_foundations/exam-guide-gap-pack/notes.md`) — worth a skim, since this exam tests judgment about *when* to use these mechanisms more than implementation syntax."
+        }
+      ],
+      "flashcards": [
+        {
+          "id": "exam-guide-gap-pack:card:1",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Workflow vs. Agentic vs. Augmented LLM",
+          "question": "What are the three architectural patterns an architect chooses among, and what distinguishes them?",
+          "answer": "Workflow (fixed, predetermined sequence), agentic (model decides its own steps), and augmented LLM (a single call enhanced with tools/retrieval but no multi-step orchestration). Choose based on whether the task path is fixed, variable, or just needs light augmentation."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:2",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Business Value Pillars",
+          "question": "Name the business value pillars an AI architecture should trace back to.",
+          "answer": "Efficiency, transformation, productivity, cost, and performance SLAs. An architecture without a clear pillar is hard to justify or measure."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:3",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Feedback Loops in Architecture",
+          "question": "Why treat the feedback loop as a first-class part of an end-to-end architecture rather than an afterthought?",
+          "answer": "Without it, the system can't improve after deployment — input/processing/output alone is a one-shot design with no mechanism to learn from production signal."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:4",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Hub-and-Spoke Orchestration",
+          "question": "Why should all subagent communication route through the coordinator rather than directly between subagents?",
+          "answer": "It preserves observability, consistent error handling, and controlled information flow. Direct subagent-to-subagent channels sacrifice all three."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:5",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Narrow Decomposition Failure",
+          "question": "Every subagent in a multi-agent system succeeds, yet the final output misses whole subdomains of the task. What's the root cause and fix?",
+          "answer": "The coordinator's decomposition was too narrow — it never assigned those subdomains to any subagent. Fix decomposition breadth, not subagent performance."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:6",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Model Tier Tradeoff",
+          "question": "What's the architect-level framing for choosing among Opus/Sonnet/Haiku tiers?",
+          "answer": "Match capability tier to actual task difficulty — capability, cost, and latency move together, so defaulting to the most capable tier everywhere overspends on tasks that don't need it."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:7",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Prompt Caching for Latency and Cost",
+          "question": "An application resends the same 8,000-token system prompt and policy document on every request. What single change most directly reduces both latency and cost?",
+          "answer": "Order the static content first and enable prompt caching — this reduces time-to-first-token and per-request cost without discarding needed content."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:8",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Prompt Reuse Mechanisms",
+          "question": "Caching, modular prompts, and Skills are all \"prompt reuse strategies\" — what problem does each solve?",
+          "answer": "Caching is a cost/latency lever (reusing a stable prefix); modular prompts are a maintainability lever (composable, versioned fragments); Skills are a capability-packaging lever (on-demand reusable workflows)."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:9",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Least Privilege in Integration",
+          "question": "A customer-support agent has refund and account-deletion tools it never needs for its actual role. What's the least-privilege fix, and what's the weaker alternative?",
+          "answer": "Remove the unneeded tools entirely. Adding logging or a confirmation step only monitors or slows misuse — it doesn't eliminate the unnecessary attack surface."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:10",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Accuracy-Latency Tradeoff",
+          "question": "How should an architect justify a chosen point on the accuracy-latency-cost curve?",
+          "answer": "Against the actual SLA and budget for that use case — \"more accurate\" is not free, and the right tradeoff point depends on what the task actually requires, not a default assumption that more is always better."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:11",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Observability at Scale",
+          "question": "Why isn't \"log every raw prompt and response\" an adequate observability strategy for a high-volume production system?",
+          "answer": "Raw logs at volume aren't reviewable or actionable. Effective observability needs sampling, structured event logging, and aggregate quality metrics that surface drift and outliers."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:12",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "RAG Chunking and Data Shape",
+          "question": "Why can't one chunking/indexing strategy serve both long-form documents and short structured FAQ entries equally well?",
+          "answer": "Chunking and indexing strategy must match the data's shape — a strategy tuned for long-form prose fragments or dilutes short structured records, and vice versa."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:13",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Retrieval Strategy by Query Pattern",
+          "question": "When does an architect favor structured/metadata filtering over embedding similarity search for retrieval?",
+          "answer": "For exact-lookup queries (specific IDs, dates, categories). Embedding similarity search fits conceptual/semantic queries better; many real systems need both (hybrid retrieval)."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:14",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Connection Protocol Selection",
+          "question": "When is MCP the right integration mechanism versus a direct API/CLI integration?",
+          "answer": "MCP fits reusable, cross-application tool/resource access maintained independently of any one app. Direct API/CLI integration fits tightly-coupled, single-application needs where reuse isn't a goal."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:15",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Progressive Discovery vs. Monolithic Context",
+          "question": "Why does exposing a queryable catalog/resource scale better than loading an entire dataset or full tool schema set into context up front?",
+          "answer": "Progressive discovery lets an agent pull only what it needs per task; monolithic context grows unboundedly with the underlying data or tool set and wastes context budget on unused material."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:16",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Retrieval Regression Diagnosis",
+          "question": "A RAG system starts returning confident but incorrect answers right after a document refresh; model version and latency are unchanged. Where do you look first?",
+          "answer": "The retrieval/indexing layer — a broken re-index or mismatched embeddings is the most likely cause of a regression tied specifically to a data refresh event."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:17",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Diagnosing Prompt Failure vs. Hallucination vs. Model Mismatch",
+          "question": "Why does it matter whether a bad output is a prompt failure, a hallucination, or a model mismatch?",
+          "answer": "Each has a different fix — clarify instructions, add grounding/verification, or change capability tier respectively. Treating all three the same way wastes iteration cycles on the wrong lever."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:18",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Segment-Level Validation",
+          "question": "A system shows 97% aggregate accuracy. Why shouldn't that number alone justify cutting human review?",
+          "answer": "Aggregate accuracy can hide a failing segment — one document type or field can perform far worse than the average while the overall number still looks healthy. Segment before you trust the aggregate."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:19",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Human-in-the-Loop Placement",
+          "question": "Why is \"require human approval on every model output\" not the correct governance default?",
+          "answer": "It defeats the purpose of automation. HITL should be targeted at high error-cost or genuinely judgment-requiring decisions (e.g., large refunds, medical/legal determinations), not applied blanket."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:20",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Compliance as Architecture Input",
+          "question": "Why should GDPR/HIPAA/FedRAMP-type requirements be resolved before finalizing an architecture rather than after?",
+          "answer": "They constrain data residency, retention, and access-control design at a structural level — retrofitting compliance after the architecture is set is far more costly and sometimes impossible without a redesign."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:21",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Communicating Tradeoffs",
+          "question": "What makes \"we chose Sonnet over Opus for this path\" a weaker stakeholder communication than the fuller version?",
+          "answer": "It states the decision without the tradeoff. \"We traded some capability for a 3x latency improvement that meets the SLA\" gives stakeholders the reasoning they need to evaluate and revisit the decision later."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:22",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Lifecycle Ownership Beyond Handoff",
+          "question": "Does an architect's responsibility end at solution handoff?",
+          "answer": "No — the lifecycle includes discovery, design, handoff, monitoring, and iteration. Monitoring production signal and iterating based on it are part of the architect's ongoing responsibility."
+        },
+        {
+          "id": "exam-guide-gap-pack:card:23",
+          "pack_id": "exam-guide-gap-pack",
+          "topic": "Developer Productivity Enablement",
+          "question": "Why is standardizing CLAUDE.md and shared MCP configuration across a team an architectural concern, not just individual preference?",
+          "answer": "Inconsistent per-developer configuration produces inconsistent Claude Code behavior across a team and onboarding friction — standardizing it is a deliberate architectural decision with team-wide impact."
+        }
+      ],
+      "practice_questions": [
+        {
+          "id": "exam-guide-gap-pack:question:1",
+          "number": 1,
+          "scenario": "A client wants to \"add AI\" to their claims-processing workflow. Initial discovery reveals the actual goal is handling 3x current claim volume without adding headcount, within the same average processing time.",
+          "scenario_context": "",
+          "prompt": "Which business value pillar should anchor this architecture, and why does that matter?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Transformation, because AI is inherently transformative technology."
+            },
+            {
+              "letter": "B",
+              "text": "Efficiency, because the stated goal is doing more of the same work with the same resources — the architecture and success metrics should be built around throughput per headcount, not novel capability."
+            },
+            {
+              "letter": "C",
+              "text": "Cost, because AI projects are usually justified on cost alone."
+            },
+            {
+              "letter": "D",
+              "text": "It doesn't matter which pillar is named as long as the system works technically."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "The stated goal — more volume, same headcount, same processing time — is a throughput/efficiency problem. Naming the correct pillar changes what you architect for and measure; a transformation-framed project would chase new capabilities the client didn't ask for.",
+          "distractors": {
+            "A": "Transformation implies doing previously-impossible work, which isn't what was requested here.",
+            "C": "Cost framing is a guess not grounded in what discovery actually surfaced.",
+            "D": "Skipping this framing risks building toward the wrong success metric even if the system technically functions."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:2",
+          "number": 2,
+          "scenario": "A three-agent research pipeline (search, analysis, synthesis) is coordinated by a supervisor agent. An engineer proposes letting the search agent hand results directly to the analysis agent to \"save a hop\" through the coordinator.",
+          "scenario_context": "",
+          "prompt": "What is the strongest architectural objection?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Direct agent-to-agent communication is blocked by the Claude Agent SDK at the protocol level."
+            },
+            {
+              "letter": "B",
+              "text": "It doubles token usage because results would be serialized twice."
+            },
+            {
+              "letter": "C",
+              "text": "Routing through the coordinator preserves observability, consistent error handling, and controlled information flow — a direct channel sacrifices all three."
+            },
+            {
+              "letter": "D",
+              "text": "The analysis agent would require the search agent's exact tool permissions."
+            }
+          ],
+          "correct_choices": [
+            "C"
+          ],
+          "selection_count": 1,
+          "explanation": "Hub-and-spoke orchestration through the coordinator is what provides observability, consistent error handling, and controlled information flow across a multi-agent system. Bypassing it for one hop sacrifices those properties for that path.",
+          "distractors": {
+            "A": "This isn't a hard protocol restriction — it's an architectural choice with real tradeoffs, which is the actual point being tested.",
+            "B": "A token-doubling claim isn't the core architectural issue here.",
+            "D": "Tool permissions aren't inherently shared just because two agents exchange data directly."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:3",
+          "number": 3,
+          "scenario": "A multi-agent system decomposes \"summarize the competitive landscape for creative-industry AI tools\" into subagents covering only visual-arts tools. Every subagent completes its assigned work correctly, but the final report never mentions music, writing, or film tools.",
+          "scenario_context": "",
+          "prompt": "What is the correct architectural fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Give the synthesis agent a stronger prompt asking it to check for completeness."
+            },
+            {
+              "letter": "B",
+              "text": "Add a fourth QA subagent to review the final report for gaps."
+            },
+            {
+              "letter": "C",
+              "text": "Fix the coordinator's decomposition to cover all relevant creative-industry subdomains before delegating."
+            },
+            {
+              "letter": "D",
+              "text": "Increase each subagent's context window so it can research more broadly."
+            }
+          ],
+          "correct_choices": [
+            "C"
+          ],
+          "selection_count": 1,
+          "explanation": "Every subagent succeeded at the (too-narrow) scope it was assigned — the decomposition itself, done by the coordinator, never included the missing subdomains. The fix belongs at the decomposition step, not downstream.",
+          "distractors": {
+            "A": "The synthesis agent can only synthesize what it received; it never received the missing subdomains.",
+            "B": "A QA pass might catch the gap after the fact but doesn't fix the architectural cause.",
+            "D": "Context window size doesn't cause or fix a scoping/decomposition problem."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:4",
+          "number": 4,
+          "scenario": "An architecture team is deciding between MCP, a direct API/CLI integration, and an agent-to-agent protocol for connecting a Claude-based system to an internal inventory service used by exactly one application team, with no plans for reuse.",
+          "scenario_context": "",
+          "prompt": "Which integration mechanism best fits, and why?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "MCP, because it's the newest and most capable option."
+            },
+            {
+              "letter": "B",
+              "text": "A direct API/CLI integration, since the need is tightly coupled to a single application with no reuse requirement."
+            },
+            {
+              "letter": "C",
+              "text": "An agent-to-agent protocol, since any two systems communicating should use agent-to-agent patterns."
+            },
+            {
+              "letter": "D",
+              "text": "All three are functionally interchangeable, so the choice doesn't matter architecturally."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Connection protocol should match the actual reuse and coupling profile. A single-application, non-reused integration doesn't need MCP's cross-application reuse machinery or an agent-to-agent protocol meant for autonomous multi-system collaboration.",
+          "distractors": {
+            "A": "MCP being commonly used for other cases doesn't make it the right fit here; \"newest\" is not the deciding criterion.",
+            "C": "Agent-to-agent protocols solve a different problem (autonomous cross-system collaboration), not simple single-app integration.",
+            "D": "The choice materially affects reusability and maintenance burden — it isn't interchangeable."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:5",
+          "number": 5,
+          "scenario": "A RAG system indexes both long-form legal contracts and a short structured FAQ table using the same chunking and indexing configuration tuned for the contracts. FAQ retrieval quality is poor.",
+          "scenario_context": "",
+          "prompt": "What is the most likely architectural cause?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "The embedding model is too small for legal language."
+            },
+            {
+              "letter": "B",
+              "text": "Chunking and indexing strategy tuned for long-form documents doesn't match the FAQ table's structured, short-entry shape."
+            },
+            {
+              "letter": "C",
+              "text": "The FAQ table needs a larger context window to retrieve correctly."
+            },
+            {
+              "letter": "D",
+              "text": "FAQ content should be excluded from RAG entirely."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Chunking and indexing strategy must match the data's shape. A configuration tuned for long-form prose will fragment or dilute short structured entries like FAQ rows, degrading retrieval quality for that content type specifically.",
+          "distractors": {
+            "A": "Embedding model capacity isn't the described symptom — it's a shape mismatch between content type and chunking strategy.",
+            "C": "Context window size at generation time doesn't address a retrieval-stage indexing mismatch.",
+            "D": "Excluding the FAQ content removes value rather than fixing the retrieval configuration."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:6",
+          "number": 6,
+          "scenario": "A production RAG-based support system suddenly starts returning confident, plausible-sounding wrong answers immediately after a scheduled document refresh. Model version, prompt, and average latency are all unchanged.",
+          "scenario_context": "",
+          "prompt": "Where should the architect investigate first?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Whether the model was silently updated by the provider."
+            },
+            {
+              "letter": "B",
+              "text": "Whether the retrieval/indexing step is returning irrelevant or stale chunks after the refresh."
+            },
+            {
+              "letter": "C",
+              "text": "Whether the temperature setting drifted."
+            },
+            {
+              "letter": "D",
+              "text": "Whether the context window shrank."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "A regression tied specifically to a document refresh event, with model and latency unchanged, points first at the retrieval/indexing layer — a broken re-index or mismatched embeddings is the most likely cause.",
+          "distractors": {
+            "A": "A silent model change wouldn't correlate specifically with the document refresh event.",
+            "C": "Temperature drift wouldn't explain a regression timed exactly to a data refresh.",
+            "D": "Context window size doesn't change from a document refresh event."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:7",
+          "number": 7,
+          "scenario": "A team is designing the evaluation strategy for a safety-critical Claude-based system that screens loan applications. They currently rely solely on an automated accuracy metric measured against a labeled test set.",
+          "scenario_context": "",
+          "prompt": "Which two additions would most strengthen the evaluation strategy? (Select TWO responses.)",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Human expert review of edge cases and disputed decisions."
+            },
+            {
+              "letter": "B",
+              "text": "Adversarial/red-team test cases targeting bias and safety failure modes."
+            },
+            {
+              "letter": "C",
+              "text": "Increasing the size of the labeled test set with more of the same kind of examples."
+            },
+            {
+              "letter": "D",
+              "text": "Switching to a larger model to improve the automated accuracy score."
+            }
+          ],
+          "correct_choices": [
+            "A",
+            "B"
+          ],
+          "selection_count": 2,
+          "explanation": "A single automated accuracy metric doesn't cover nuanced judgment calls or adversarial/safety failure modes. Human review and red-team testing are the mixed-methodology additions the guide calls for in safety-critical evaluation design — no single method covers every failure mode.",
+          "distractors": {
+            "C": "More examples of the same kind don't add a new failure-mode lens; they just add volume to the existing method.",
+            "D": "A larger model may or may not improve the metric, but doesn't address the evaluation strategy's actual gap (coverage of judgment and adversarial cases)."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:8",
+          "number": 8,
+          "scenario": "A support agent's toolset has grown over six months from 4 tools to 18, including several rarely-used tools (loyalty program, gift cards, subscriptions) unrelated to its core refund/return responsibilities.",
+          "scenario_context": "",
+          "prompt": "What is the primary architectural risk, and what is the correct least-privilege fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Risk: MCP protocol tool-count limits will be exceeded. Fix: split tools across two MCP servers."
+            },
+            {
+              "letter": "B",
+              "text": "Risk: tool-selection reliability degrades as available tools grow. Fix: remove or scope out tools unrelated to the agent's core role, or split into specialized agents."
+            },
+            {
+              "letter": "C",
+              "text": "Risk: the agent will run out of context. Fix: shorten each tool's description."
+            },
+            {
+              "letter": "D",
+              "text": "Risk: none — more tools only add capability, not risk."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Decision complexity and misrouting risk increase as an agent's toolset grows past what its role needs. Least privilege means removing the unnecessary capability (or splitting responsibilities across specialized agents), not just working around a perceived technical limit.",
+          "distractors": {
+            "A": "There's no such hard MCP tool-count limit driving this scenario.",
+            "C": "Shortening descriptions trades clarity for a marginal context savings and doesn't address selection reliability.",
+            "D": "Growing toolsets do measurably degrade selection reliability — this is a real architectural risk."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:9",
+          "number": 9,
+          "scenario": "A healthcare client's Claude-based system will process patient records. The architecture team is finalizing data flow, retention, and access-logging design in the final week before launch, after the core application logic is already built.",
+          "scenario_context": "",
+          "prompt": "What is the architectural risk in this sequencing?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "None — compliance can always be layered on right before launch."
+            },
+            {
+              "letter": "B",
+              "text": "HIPAA-driven data residency, retention, and access-control requirements can force structural changes that are far more costly to retrofit than to design in from the start."
+            },
+            {
+              "letter": "C",
+              "text": "Compliance only affects legal documentation, not system architecture."
+            },
+            {
+              "letter": "D",
+              "text": "FedRAMP, not HIPAA, would apply to a healthcare client."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Regulatory requirements like HIPAA constrain data residency, retention, and access-control design at a structural level. Resolving them after core application logic is built risks costly rework or an architecture that can't actually be brought into compliance without a redesign.",
+          "distractors": {
+            "A": "Compliance requirements often require structural decisions (e.g., where data is stored, how it's logged) that are difficult to bolt on afterward.",
+            "C": "Compliance directly shapes technical architecture, not just legal paperwork.",
+            "D": "HIPAA (healthcare data) is the relevant regime here; FedRAMP applies to US federal government cloud authorization, a different context."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:10",
+          "number": 10,
+          "scenario": "A stakeholder asks why the team chose Sonnet-tier instead of Opus-tier for a customer-facing summarization feature. The architect responds: \"We chose Sonnet because it's cheaper.\"",
+          "scenario_context": "",
+          "prompt": "What is missing from this communication, and why does it matter?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Nothing — cost is a valid and sufficient justification."
+            },
+            {
+              "letter": "B",
+              "text": "The specific tradeoff: what capability, if any, was given up, and what benefit (latency, cost, or both) was gained relative to the SLA — stakeholders need the tradeoff to evaluate and revisit the decision later."
+            },
+            {
+              "letter": "C",
+              "text": "The exact per-token price difference between the tiers."
+            },
+            {
+              "letter": "D",
+              "text": "A promise that the decision will never be revisited."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Effective architectural communication states the tradeoff, not just the decision — e.g., \"we traded some capability for a 3x latency improvement that meets the SLA.\" A bare cost justification doesn't let stakeholders evaluate whether the tradeoff is still right as requirements evolve.",
+          "distractors": {
+            "A": "\"Cheaper\" alone doesn't communicate what was given up or whether the tradeoff still holds under changing requirements.",
+            "C": "Exact pricing detail isn't the missing architectural reasoning stakeholders need.",
+            "D": "Architectural decisions should remain revisitable as requirements or model capabilities change."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:11",
+          "number": 11,
+          "scenario": "A production system reports 97% aggregate extraction accuracy across all document types. A team proposes cutting human review by 80% based on this number.",
+          "scenario_context": "",
+          "prompt": "What should happen before that decision is made?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Nothing further — 97% aggregate accuracy is a strong enough signal on its own."
+            },
+            {
+              "letter": "B",
+              "text": "Segment accuracy by document type and field to check whether the aggregate is hiding a failing segment before reducing review."
+            },
+            {
+              "letter": "C",
+              "text": "Re-run the same evaluation on the same test set to confirm the number."
+            },
+            {
+              "letter": "D",
+              "text": "Switch to a different accuracy metric that produces a more conservative number."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Aggregate accuracy can mask a failing segment (one document type or field performing far worse than the average). Segmenting accuracy by type/field before cutting review protects against silently degrading quality on the segments that need it most.",
+          "distractors": {
+            "A": "A single aggregate number, without segmentation, is exactly the risk described.",
+            "C": "Re-running the same evaluation on the same data doesn't surface segment-level variance.",
+            "D": "Changing metrics doesn't address whether specific segments are underperforming."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:12",
+          "number": 12,
+          "scenario": "A team building an autonomous claims-approval agent proposes requiring human approval on every single decision the agent makes, framing it as the safest governance posture.",
+          "scenario_context": "",
+          "prompt": "What is the architectural problem with this approach?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "There is no problem — maximal human review is always the correct default for AI systems."
+            },
+            {
+              "letter": "B",
+              "text": "Blanket human-in-the-loop on every decision defeats the purpose of automation; HITL should be targeted at high error-cost or genuinely judgment-requiring decisions."
+            },
+            {
+              "letter": "C",
+              "text": "Human reviewers are less accurate than the model, so this would reduce quality."
+            },
+            {
+              "letter": "D",
+              "text": "This approach violates GDPR."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Human-in-the-loop is most valuable where the cost of an error is high or where judgment genuinely requires human context. Applying it to every decision erases the efficiency gains the system was built to provide, without a proportional safety benefit for low-stakes decisions.",
+          "distractors": {
+            "A": "Blanket review isn't automatically \"safest\" — it has a real cost in defeating the system's purpose, which is part of the tradeoff an architect must weigh.",
+            "C": "Relative accuracy of humans vs. the model isn't the stated architectural objection here.",
+            "D": "This scenario doesn't describe a GDPR-specific issue."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:13",
+          "number": 13,
+          "scenario": "An architecture team is choosing between a workflow pattern and an agentic pattern for a new invoice-processing feature. Invoices arrive in a small number of known formats and always require the same four processing steps in the same order.",
+          "scenario_context": "",
+          "prompt": "Which two considerations most strongly favor a workflow pattern over an agentic pattern here? (Select TWO responses.)",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "The task is well-defined and repeatable with a predictable sequence of steps."
+            },
+            {
+              "letter": "B",
+              "text": "A fixed pipeline is easier to test, monitor, and reason about than a model-driven decision path when the sequence never actually varies."
+            },
+            {
+              "letter": "C",
+              "text": "Agentic patterns are always more expensive regardless of the task."
+            },
+            {
+              "letter": "D",
+              "text": "Workflows can call more tools than agents can."
+            }
+          ],
+          "correct_choices": [
+            "A",
+            "B"
+          ],
+          "selection_count": 2,
+          "explanation": "A predictable, repeatable sequence is the textbook case for a workflow: it's simpler to test, monitor, and operate than an agentic pattern, and a fixed pipeline doesn't sacrifice anything when the steps genuinely never vary.",
+          "distractors": {
+            "C": "Cost depends on the specific configuration (models, tool calls, retries), not the pattern category alone.",
+            "D": "Tool-calling capacity isn't a structural difference between workflows and agents."
+          }
+        },
+        {
+          "id": "exam-guide-gap-pack:question:14",
+          "number": 14,
+          "scenario": "A client's Claude Code usage across a 40-engineer team is inconsistent — some engineers get project conventions applied automatically, others don't, and MCP server access varies by machine.",
+          "scenario_context": "",
+          "prompt": "As the architect responsible for developer productivity enablement, what is the most effective fix?",
+          "choices": [
+            {
+              "letter": "A",
+              "text": "Tell each engineer individually to check their local configuration."
+            },
+            {
+              "letter": "B",
+              "text": "Standardize CLAUDE.md hierarchy and shared MCP server configuration at the project/team level so behavior doesn't depend on individual local setup."
+            },
+            {
+              "letter": "C",
+              "text": "Restrict Claude Code to a single designated \"AI engineer\" role to reduce variance."
+            },
+            {
+              "letter": "D",
+              "text": "Accept the inconsistency as an unavoidable cost of AI tooling adoption."
+            }
+          ],
+          "correct_choices": [
+            "B"
+          ],
+          "selection_count": 1,
+          "explanation": "Standardizing CLAUDE.md and shared MCP configuration at the team/project level is an architectural responsibility that directly reduces onboarding friction and behavioral inconsistency across a team — treating it as individual preference is what caused the drift in the first place.",
+          "distractors": {
+            "A": "Individual troubleshooting doesn't fix the systemic lack of shared configuration causing the drift.",
+            "C": "Restricting usage to one role abandons the productivity benefit for the rest of the team rather than fixing the consistency problem.",
+            "D": "The inconsistency is fixable through standard configuration management, not an inherent limitation."
+          }
+        }
+      ]
+    }
+  ]
+}
