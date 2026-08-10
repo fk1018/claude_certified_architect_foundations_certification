@@ -11,6 +11,8 @@ dependencies = [
 
 [project.scripts]
 ccafc = "ccafc_cli.app:main"
+ccdvf = "ccafc_cli.entrypoints:main_developer_foundations"
+ccarp = "ccafc_cli.entrypoints:main_architect_professional"
 
 [dependency-groups]
 dev = [
