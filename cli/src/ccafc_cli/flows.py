@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from datetime import datetime, timedelta, timezone
+from enum import StrEnum
 from typing import Any
 
 import questionary
@@ -17,6 +18,11 @@ from ccafc_cli.storage import (
     save_progress,
 )
 from ccafc_cli.ui import confirm, console, pause, select_one
+
+
+class ShortExamFeedbackMode(StrEnum):
+    IMMEDIATE = "immediate"
+    DEFERRED = "deferred"
 
 
 def find_by_id(items: list[dict[str, Any]], item_id: str) -> dict[str, Any] | None:
@@ -113,6 +119,26 @@ def choose_short_exam(
     if exam is None:
         raise RuntimeError(f"Unknown short practice exam: {exam_id}")
     return exam
+
+
+def choose_short_exam_feedback_mode() -> ShortExamFeedbackMode:
+    value = select_one(
+        "When should feedback be shown?",
+        [
+            {
+                "name": (
+                    "After each question - confirm correct answers and explain misses; "
+                    "pause the timer until you continue"
+                ),
+                "value": ShortExamFeedbackMode.IMMEDIATE.value,
+            },
+            {
+                "name": "At the end - hide correctness and explanations until submission",
+                "value": ShortExamFeedbackMode.DEFERRED.value,
+            },
+        ],
+    )
+    return ShortExamFeedbackMode(value)
 
 
 def show_exam_list() -> None:
@@ -217,7 +243,11 @@ def resume_exam() -> None:
     _run_exam_attempt(exam, progress)
 
 
-def start_short_exam(exam_id: str | None = None, force: bool = False) -> None:
+def start_short_exam(
+    exam_id: str | None = None,
+    force: bool = False,
+    feedback_mode: ShortExamFeedbackMode | str | None = None,
+) -> None:
     exams = load_short_practice_exams()
     progress = load_progress()
     active = progress.get("active_short_exam")
@@ -238,6 +268,12 @@ def start_short_exam(exam_id: str | None = None, force: bool = False) -> None:
         console.print(f"[red]Unknown short exam:[/] {exam_id}")
         raise SystemExit(1)
 
+    mode = (
+        ShortExamFeedbackMode(feedback_mode)
+        if feedback_mode is not None
+        else choose_short_exam_feedback_mode()
+    )
+
     started_at = datetime.now(timezone.utc)
     deadline = started_at + timedelta(minutes=int(exam["time_limit_minutes"]))
     progress["active_short_exam"] = {
@@ -246,6 +282,7 @@ def start_short_exam(exam_id: str | None = None, force: bool = False) -> None:
         "deadline": deadline.isoformat(),
         "answers": {},
         "question_index": 0,
+        "feedback_mode": mode.value,
         "pending_feedback": None,
     }
     save_progress(progress)
@@ -575,12 +612,15 @@ def _run_exam_attempt(exam: dict[str, Any], progress: dict[str, Any]) -> None:
 
 def _run_short_exam_attempt(exam: dict[str, Any], progress: dict[str, Any]) -> None:
     active = progress["active_short_exam"]
+    feedback_mode = ShortExamFeedbackMode(
+        active.get("feedback_mode", ShortExamFeedbackMode.IMMEDIATE.value)
+    )
+    immediate_feedback = feedback_mode is ShortExamFeedbackMode.IMMEDIATE
     questions = exam["questions"]
     answers: dict[str, list[str]] = active.setdefault("answers", {})
     index = int(active.get("question_index", 0))
     questions_shown = 0
     timed_out = False
-    correct_banner = False
 
     console.print(
         f"[bold]{exam['title']}[/] "
@@ -598,16 +638,20 @@ def _run_short_exam_attempt(exam: dict[str, Any], progress: dict[str, Any]) -> N
             f"{multiple_count} multiple-response items use exact-match scoring and state "
             "the required selection count."
         )
-    console.print(
-        "Incorrect answers reveal feedback immediately; the timer pauses until you continue."
-    )
+    if immediate_feedback:
+        console.print(
+            "Feedback follows every answer; missed answers include an explanation. "
+            "The timer pauses until you continue."
+        )
+    else:
+        console.print("Correctness and explanations stay hidden until you submit.")
     console.print(
         "Answers are saved after every question. Ctrl+C exits; "
         "use `ccafc exam short resume` to continue."
     )
 
     try:
-        if active.get("pending_feedback"):
+        if immediate_feedback and active.get("pending_feedback"):
             _show_pending_short_feedback(exam, progress)
             console.clear()
 
@@ -618,9 +662,6 @@ def _run_short_exam_attempt(exam: dict[str, Any], progress: dict[str, Any]) -> N
 
             if questions_shown:
                 console.clear()
-            if correct_banner:
-                console.print("[green]Correct.[/]")
-                correct_banner = False
 
             question = questions[index]
             answer = _ask_question(
@@ -635,16 +676,14 @@ def _run_short_exam_attempt(exam: dict[str, Any], progress: dict[str, Any]) -> N
             questions_shown += 1
             active["question_index"] = index
 
-            if answer_is_correct(question, answer):
-                correct_banner = True
-            else:
+            if immediate_feedback:
                 active["pending_feedback"] = {
                     "question_number": question["number"],
                     "started_at": now_iso(),
                 }
             save_progress(progress)
 
-            if active.get("pending_feedback"):
+            if immediate_feedback and active.get("pending_feedback"):
                 console.clear()
                 _show_pending_short_feedback(exam, progress)
     except KeyboardInterrupt:
@@ -652,8 +691,6 @@ def _run_short_exam_attempt(exam: dict[str, Any], progress: dict[str, Any]) -> N
         return
 
     console.clear()
-    if correct_banner:
-        console.print("[green]Correct.[/]")
     if timed_out:
         console.print("[red]Time expired. Submitting your short attempt.[/]")
     _submit_short_exam(exam, progress)
@@ -710,11 +747,15 @@ def _finish_pending_short_feedback(
 
 
 def _print_short_answer_feedback(question: dict[str, Any], answer: Any) -> None:
+    console.rule(f"Question {question['number']} Feedback")
+    if answer_is_correct(question, answer):
+        console.print("[green]Correct.[/]")
+        return
+
     selected = set(normalize_answer(answer))
     correct = correct_choices_for(question)
     correct_set = set(correct)
 
-    console.rule(f"Question {question['number']} Feedback")
     console.print("[red]Incorrect.[/]")
     console.print(Markdown(question["prompt"]))
     console.print(f"[bold]Your answer:[/] {format_answer(answer)}")

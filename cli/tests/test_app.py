@@ -24,6 +24,38 @@ def test_short_exam_commands_are_available() -> None:
         assert command in result.output
 
 
+def test_short_exam_start_exposes_feedback_option() -> None:
+    result = runner.invoke(app_module.app, ["exam", "short", "start", "--help"])
+
+    assert result.exit_code == 0
+    assert "--feedback" in result.output
+    assert "immediate" in result.output
+    assert "deferred" in result.output
+
+
+def test_short_exam_start_passes_explicit_feedback_mode(monkeypatch) -> None:
+    calls = []
+    monkeypatch.setattr(
+        app_module,
+        "start_short_exam",
+        lambda **kwargs: calls.append(kwargs),
+    )
+
+    result = runner.invoke(
+        app_module.app,
+        ["exam", "short", "start", "short-practice-exam-1", "--feedback", "deferred"],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        {
+            "exam_id": "short-practice-exam-1",
+            "force": False,
+            "feedback_mode": app_module.ShortExamFeedbackMode.DEFERRED,
+        }
+    ]
+
+
 def test_interactive_menu_exposes_separate_full_and_short_workflows(monkeypatch) -> None:
     answers = iter(["short_exam", "short_exam_review", "exam_review", "exit"])
     calls = []

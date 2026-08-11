@@ -82,6 +82,8 @@ def test_load_progress_migrates_legacy_answer_strings(tmp_path: Path, monkeypatc
     }
     assert progress["exam_attempts"][0]["answers"] == {"1": ["D"]}
     assert progress["active_short_exam"]["answers"] == {"1": ["A", "C"]}
+    assert progress["active_short_exam"]["feedback_mode"] == "immediate"
+    assert progress["active_short_exam"]["pending_feedback"] is None
     assert progress["short_exam_attempts"][0]["answers"] == {"1": ["B"]}
 
 

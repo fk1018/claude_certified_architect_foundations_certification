@@ -18,6 +18,8 @@ npm install
 npm run dev
 ```
 
+Run `npm test`, `npm run lint`, and `npm run build` to validate changes.
+
 `npm run dev`/`npm run build` both run `npm run sync-data` first, which copies the
 three tracks' JSON into `public/data/` (gitignored — regenerated on every run, the
 CLI's generated JSON is the single source of truth).
@@ -28,7 +30,8 @@ CLI's generated JSON is the single source of truth).
   `architect-professional`), each with its full practice-exam bank, short drills,
   study notes, and flashcards.
 - Exam runner with a real countdown timer, single/multi-select questions, and
-  auto-submit at time's up.
+  auto-submit at time's up. Short exams offer feedback after each locked answer
+  (with the timer paused until continuing) or deferred feedback at submission.
 - Answer review with per-question explanations after submitting.
 - Flashcard flow with a "known" / "still learning" split.
 

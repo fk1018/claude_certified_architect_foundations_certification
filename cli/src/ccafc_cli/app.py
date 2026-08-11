@@ -6,6 +6,7 @@ import typer
 
 from ccafc_cli import __version__
 from ccafc_cli.flows import (
+    ShortExamFeedbackMode,
     open_notes,
     resume_exam,
     resume_short_exam,
@@ -173,9 +174,14 @@ def short_exam_start(
         help="Short practice exam ID, e.g. short-practice-exam-1.",
     ),
     force: bool = typer.Option(False, "--force", help="Discard any active short attempt."),
+    feedback: Optional[ShortExamFeedbackMode] = typer.Option(
+        None,
+        "--feedback",
+        help="Show feedback after each question (immediate) or only at the end (deferred).",
+    ),
 ) -> None:
-    """Start a timed short practice exam with immediate missed-answer feedback."""
-    start_short_exam(exam_id=exam_id, force=force)
+    """Start a timed short practice exam and choose when feedback appears."""
+    start_short_exam(exam_id=exam_id, force=force, feedback_mode=feedback)
 
 
 @short_exam_app.command("resume")

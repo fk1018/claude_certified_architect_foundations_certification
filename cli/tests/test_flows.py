@@ -441,7 +441,7 @@ def test_short_attempt_confirms_correct_and_explains_wrong_answers(monkeypatch) 
     assert "Extra: B" in rendered
     assert "Explanation 1." not in rendered
     assert "Explanation 2." in rendered
-    assert pauses == ["Continue"]
+    assert pauses == ["Continue", "Continue"]
     assert submissions == [exam["id"]]
     assert progress["active_short_exam"]["question_index"] == 2
     assert progress["active_short_exam"]["pending_feedback"] is None
@@ -449,6 +449,51 @@ def test_short_attempt_confirms_correct_and_explains_wrong_answers(monkeypatch) 
         state["active_short_exam"].get("pending_feedback")
         for state in saved_states
     )
+
+
+def test_deferred_short_attempt_hides_feedback_until_submission(monkeypatch) -> None:
+    questions = [_question(1, ["A"]), _question(2, ["A", "C"])]
+    exam = _short_exam(questions)
+    progress = {
+        "active_short_exam": {
+            "exam_id": exam["id"],
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "deadline": (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat(),
+            "answers": {},
+            "question_index": 0,
+            "feedback_mode": "deferred",
+            "pending_feedback": None,
+        }
+    }
+    answers = iter([["A"], ["A", "B"]])
+    submissions = []
+    output = io.StringIO()
+    test_console = Console(file=output, force_terminal=False, color_system=None, width=160)
+
+    monkeypatch.setattr(flows, "console", test_console)
+    monkeypatch.setattr(test_console, "clear", lambda: None)
+    monkeypatch.setattr(flows, "_ask_question", lambda *args, **kwargs: next(answers))
+    monkeypatch.setattr(
+        flows,
+        "pause",
+        lambda *args, **kwargs: pytest.fail("Deferred feedback must not pause the exam"),
+    )
+    monkeypatch.setattr(flows, "save_progress", lambda value: None)
+    monkeypatch.setattr(
+        flows,
+        "_submit_short_exam",
+        lambda selected_exam, value: submissions.append(selected_exam["id"]),
+    )
+
+    flows._run_short_exam_attempt(exam, progress)
+
+    rendered = output.getvalue()
+    assert "Correct." not in rendered
+    assert "Incorrect." not in rendered
+    assert "Explanation 2." not in rendered
+    assert "Correctness and explanations stay hidden until you submit." in rendered
+    assert progress["active_short_exam"]["pending_feedback"] is None
+    assert submissions == [exam["id"]]
 
 
 def test_short_feedback_pause_extends_deadline_and_clears_pending(monkeypatch) -> None:
@@ -569,6 +614,11 @@ def test_start_short_exam_ignores_active_full_exam(monkeypatch) -> None:
     monkeypatch.setattr(flows, "save_progress", lambda value: None)
     monkeypatch.setattr(
         flows,
+        "choose_short_exam_feedback_mode",
+        lambda: flows.ShortExamFeedbackMode.DEFERRED,
+    )
+    monkeypatch.setattr(
+        flows,
         "confirm",
         lambda *args, **kwargs: pytest.fail("An active full exam must not block a short exam"),
     )
@@ -583,6 +633,26 @@ def test_start_short_exam_ignores_active_full_exam(monkeypatch) -> None:
     assert runs == [exam["id"]]
     assert progress["active_exam"] is full_active
     assert progress["active_short_exam"]["exam_id"] == exam["id"]
+    assert progress["active_short_exam"]["feedback_mode"] == "deferred"
+
+
+def test_start_short_exam_explicit_feedback_mode_skips_prompt(monkeypatch) -> None:
+    exam = _short_exam([_question(1, ["A"])])
+    progress = {"active_short_exam": None, "short_exam_attempts": []}
+
+    monkeypatch.setattr(flows, "load_short_practice_exams", lambda: [exam])
+    monkeypatch.setattr(flows, "load_progress", lambda: progress)
+    monkeypatch.setattr(flows, "save_progress", lambda value: None)
+    monkeypatch.setattr(
+        flows,
+        "choose_short_exam_feedback_mode",
+        lambda: pytest.fail("An explicit feedback mode must bypass the prompt"),
+    )
+    monkeypatch.setattr(flows, "_run_short_exam_attempt", lambda *args: None)
+
+    flows.start_short_exam(exam_id=exam["id"], feedback_mode="immediate")
+
+    assert progress["active_short_exam"]["feedback_mode"] == "immediate"
 
 
 def test_short_review_reads_only_short_attempt_history(monkeypatch) -> None:

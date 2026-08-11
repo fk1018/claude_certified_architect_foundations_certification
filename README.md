@@ -80,9 +80,9 @@ npm run dev
 ## Recommended study approach
 
 Use the **short timed practice exams for regular study**. Each short exam focuses
-on one 15-question scenario, gives you 30 minutes, and immediately explains a
-missed answer while pausing the timer. That tight feedback loop makes it easier
-to identify and correct weak areas.
+on one 15-question scenario and gives you 30 minutes. Choose feedback after each
+question for a tight study loop that explains missed answers while pausing the
+timer, or keep feedback hidden until the end to practice pacing.
 
 Use the **full-length practice exams to simulate the real exam**. Each full exam
 contains 60 questions with a 120-minute limit, and feedback stays hidden until
@@ -149,8 +149,8 @@ missed or oddly-worded question as authoritative on its own.
 | Questions | 15 from one scenario | 60 across four scenarios |
 | Time limit | 30 minutes | 120 minutes |
 | Passing proxy | 12/15 | 45/60 |
-| Feedback | Immediate after a missed answer; timer pauses during review | After submission |
-| Best use | Focused study and fast feedback | Full exam simulation |
+| Feedback | Choose after each question or after submission | After submission |
+| Best use | Focused study or a quick exam simulation | Full exam simulation |
 
 All questions in the **Architect – Foundations** full exams, derived short exams,
 and study-pack quizzes are single-select multiple-choice items: exactly one
@@ -165,9 +165,11 @@ almost entirely single-select as well, but their official exam guides
 [architect professional](exam_guide_architect_professional.txt)) allow
 multiple-response items that state how many answers to select, and a small
 number of practice questions in those tracks use that format — read each
-question's instructions before answering. On short exams, correct answers
-receive a brief confirmation without revealing the explanation; missed answers
-receive the full feedback described above.
+question's instructions before answering. In a short exam's immediate mode,
+answers lock when checked, correct answers receive a brief confirmation without
+revealing the explanation, and missed answers reveal the correct choices and
+explanation. The timer pauses for either response until you continue. Deferred
+mode reveals no correctness or explanations until submission.
 
 Answers are saved after every question. Press `Ctrl+C` to leave an attempt and use
 the corresponding `resume` command later. Full and short exams keep independent
@@ -193,7 +195,7 @@ are identical across tracks, only the data they operate on differs.
 | `exam results` | Show completed full-exam attempts. |
 | `exam review [ATTEMPT_NUMBER]` | Retry missed questions from a completed full exam. |
 | `exam short list` | List the generated 15-question exams. |
-| `exam short start [EXAM_ID] [--force]` | Start a short timed exam. |
+| `exam short start [EXAM_ID] [--force] [--feedback immediate\|deferred]` | Start a short timed exam and choose when feedback appears. |
 | `exam short resume` | Resume the active short exam. |
 | `exam short results` | Show completed short-exam attempts. |
 | `exam short review [ATTEMPT_NUMBER]` | Retry missed questions from a completed short exam. |
