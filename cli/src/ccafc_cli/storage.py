@@ -119,6 +119,11 @@ def load_progress() -> dict[str, Any]:
     progress.setdefault("exam_attempts", [])
     progress.setdefault("active_short_exam", None)
     progress.setdefault("short_exam_attempts", [])
+    active_short_exam = progress.get("active_short_exam")
+    if isinstance(active_short_exam, dict):
+        if active_short_exam.get("feedback_mode") not in {"immediate", "deferred"}:
+            active_short_exam["feedback_mode"] = "immediate"
+        active_short_exam.setdefault("pending_feedback", None)
     return progress
 
 
