@@ -35,124 +35,124 @@ Meridian & Locke LLP, a mid-size legal services firm, is deploying a contract-re
 
 **Question 1.** An engineer wants the contract-review agent's tool-use loop to keep executing tools and returning results until Claude has no more tool calls to make. What should the loop key off?
 
-- A) Whether the redline text contains the phrase "no further changes."
-- B) The `stop_reason` field on each response: continue looping while it is `"tool_use"`, stop when it is `"end_turn"`.
-- C) A hard cap of five tool calls per contract.
-- D) Whether `flag_risk` returned any flags.
+- A) Whether the redline draft's text happens to contain the phrase "no further changes needed" anywhere in it.
+- B) The `stop_reason` field: keep looping while it reads `tool_use`, stop once it reads `end_turn`.
+- C) A fixed ceiling of five tool calls per contract, after which the loop halts no matter what work remains.
+- D) Whether the most recent `flag_risk` call happened to return at least one flagged clause.
 
 **Question 2.** After `flag_risk` executes and returns identified risk clauses, what must happen for the agent to correctly continue reasoning about the contract?
 
-- A) Append a `tool_result` block referencing the tool_use ID to the conversation, then send the full conversation back to the model.
-- B) Store the flags in a separate risk database only, without returning them to the model.
-- C) Insert the flags into the system prompt so they persist for the rest of the review.
-- D) Start a new session summarizing the flags found so far.
+- A) Append a `tool_result` block referencing the original `tool_use` ID, then resend the full conversation so the model can incorporate the flags.
+- B) Store the returned flags in a separate risk database only, without ever returning them to the model in the conversation.
+- C) Insert the flags directly into the system prompt so they persist as instructions for the rest of the review.
+- D) Start an entirely new session that briefly summarizes the flags found before continuing the review.
 
 **Question 3.** Firm policy requires attorney approval before `redline_suggest` output can be sent to a client on any lease agreement above $1M in value. The system prompt states this clearly, but logs show occasional auto-sends bypassing approval. What is the most reliable fix?
 
-- A) Repeat the rule at both the start and end of the system prompt.
-- B) Add few-shot examples of the agent correctly escalating high-value leases.
-- C) Implement a hook that intercepts the send action for `redline_suggest` and blocks any output targeting a high-value lease without prior attorney approval recorded.
-- D) Lower the model's temperature so it follows the stated policy more consistently.
+- A) State the $1M approval rule at both the start and the end of the system prompt for emphasis.
+- B) Add several few-shot examples in the system prompt showing the agent correctly escalating high-value leases above the $1M threshold before ever sending output.
+- C) Add a hook that intercepts the send action and blocks it unless attorney approval is already recorded.
+- D) Reduce the model's sampling randomness so it follows the stated approval policy more consistently.
 
 **Question 4.** The team wants `classify_contract_type` to always run first, with no exceptions, before any other tool.
 
-- A) State in the system prompt that `classify_contract_type` must always run first.
-- B) Set `tool_choice: "any"` on the first request so a tool call is guaranteed.
-- C) Set `tool_choice: {"type": "tool", "name": "classify_contract_type"}` on the first request, then use normal tool choice afterward.
-- D) Add several few-shot examples showing `classify_contract_type` called first.
+- A) State in the system prompt that `classify_contract_type` must always run before any other tool.
+- B) Set `tool_choice: "any"` on the first request so some tool call is guaranteed to happen.
+- C) Set `tool_choice` to force `classify_contract_type` on the first request, then allow normal tool choice afterward.
+- D) Add several few-shot examples throughout the system prompt that show `classify_contract_type` being called before every other tool in past reviews.
 
 **Question 5.** The agent currently has 14 tools, including several rarely-used ones (billing lookup, HR onboarding checks, marketing template access) unrelated to contract review. Tool selection has become unreliable. What is the single most direct fix?
 
-- A) Add a system prompt note listing which tools are "primary."
+- A) Add a system prompt note listing which of the fourteen tools count as "primary" for contract review.
 - B) Remove or scope out the tools unrelated to the agent's core contract-review role.
-- C) Increase max_tokens so the agent has more room to reason about which tool to pick.
-- D) Add several few-shot examples showing correct tool selection.
+- C) Raise the value of max_tokens so the agent has more room to reason through which of the fourteen tools to pick.
+- D) Add several few-shot examples across all fourteen tools, including billing lookup and HR onboarding, demonstrating correct selection in each case.
 
 **Question 6.** `search_clause_library` currently returns the string `"Error"` for every possible failure — bad query syntax, missing index, or service timeout. The agent responds inconsistently to each. What is the best fix?
 
-- A) Return structured error metadata: an error category, a retryable flag, and a human-readable description.
-- B) Wrap every call in an automatic retry policy.
-- C) Add a system prompt instruction telling the agent to infer the failure type from context.
-- D) Increase the library service's timeout so failures become rarer.
+- A) Return structured error metadata: an error category, a retryable flag, and a human-readable description of what failed.
+- B) Wrap every call to the library in an automatic retry policy regardless of what actually failed.
+- C) Add a system prompt instruction telling the agent to infer the failure type from unstructured context clues.
+- D) Raise the clause library service's timeout setting instead of touching the response schema, so outright failures simply happen less often.
 
 **Question 7.** When `search_clause_library` finds no matching precedent clauses, it currently returns an error. The agent responds by apologizing for "technical difficulties" and retrying the same query. What should change?
 
-- A) Add a hook that suppresses the error and ends the review.
-- B) Return a successful response with an empty result set, reserving errors for actual access failures.
-- C) Have the agent call `flag_risk` first to check whether a clause should exist.
-- D) Add a system prompt note explaining that this error usually means no clause matched.
+- A) Add a hook that silently suppresses the error and ends the review early.
+- B) Return a successful response with an empty result set, reserving actual errors for genuine access failures.
+- C) Have the agent call `flag_risk` first to check whether a clause should exist before searching.
+- D) Add a system prompt note explaining that this particular error usually just means no clause matched the query.
 
 **Question 8.** An attorney proposes replacing the agent's reasoning with a fixed sequence — always call `search_clause_library`, then `flag_risk`, then decide — arguing this makes behavior predictable.
 
 Why is model-driven tool selection the better fit for contract review?
 
-- A) Model-driven selection is always cheaper since it skips unnecessary reasoning tokens.
-- B) Contract review is high-ambiguity; the right tools and order vary by contract type and depend on intermediate findings, which a fixed sequence can't adapt to.
-- C) The Claude Agent SDK technically cannot run fixed tool sequences.
-- D) Fixed sequences cannot invoke custom tools, only built-in ones.
+- A) Model-driven selection is always cheaper because it skips unnecessary reasoning tokens on every contract.
+- B) Contract review is high-ambiguity; the right tools and order vary by contract type and depend on intermediate findings.
+- C) The Claude Agent SDK is technically incapable of executing a fixed tool sequence at all.
+- D) A fixed sequence of tool calls cannot invoke any custom tools the firm has defined for `flag_risk` or `redline_suggest`, only tools built directly into the underlying platform itself.
 
 **Question 9.** The team is deciding whether to give the main review agent `request_attorney_review` directly, or to delegate escalation decisions to a separate, narrowly-scoped subagent. Escalating unnecessarily wastes attorney time.
 
 What is the strongest argument for a separate, narrowly-scoped subagent?
 
-- A) Subagents are required any time a tool has real-world side effects.
-- B) The main agent's context window is too small to hold the escalation tool's schema.
-- C) A narrowly-scoped subagent given only the escalation tool and explicit criteria reduces the chance the main agent escalates unnecessarily while reasoning about unrelated tools.
-- D) Subagents execute faster than tools called directly by the main agent.
+- A) A separate subagent is legally required any time a tool call has real-world side effects on a client.
+- B) The main agent's context window is too small to hold the escalation tool's full JSON schema definition.
+- C) A narrowly-scoped subagent with only the escalation tool and explicit criteria is less likely to escalate unnecessarily than a generalist agent reasoning about unrelated tools.
+- D) Subagents execute their tool calls measurably faster than tools called directly by the main review agent.
 
 **Question 10.** During review of a 200-page master services agreement, the agent's context fills with verbose raw clause text, leaving little room to reason about actual risk.
 
 What is the best structural fix?
 
-- A) Increase `max_tokens` so responses can be longer.
-- B) Read only the first 50 clauses of every document.
-- C) Disable clause search entirely.
-- D) Delegate clause exploration to a subagent that returns a distilled summary of relevant findings, keeping the main agent's context focused on risk assessment.
+- A) Raise the value of max_tokens substantially so the model's eventual responses about the agreement can run considerably longer without truncation.
+- B) Read only the first 50 clauses of every document submitted for review and skip the remaining pages without exception.
+- C) Disable clause search entirely so the context never fills with clause text again.
+- D) Delegate clause exploration to a subagent that returns a distilled summary, keeping the main context focused on risk.
 
 **Question 11.** The agent escalates a contract to an attorney, but the attorney has no visibility into what the agent checked before escalating — logs show many tool calls with no accessible summary.
 
 What should the escalation to a human include?
 
-- A) The full raw transcript of every tool call and result.
-- B) Just the final flagged clause, since the attorney can re-investigate from there.
+- A) The full raw, unstructured transcript of every tool call and result made during the review.
+- B) Just the final flagged clause, since the attorney can re-investigate everything else from there.
 - C) A structured handoff summary: what was checked, what was found, and a recommended next action.
-- D) A sentiment analysis of how urgent the review seemed.
+- D) A sentiment score estimating how urgent the review felt based on the language used.
 
 **Question 12.** The firm is deciding between letting attorneys run the agent via a hosted, Anthropic-managed execution environment versus self-hosting the harness on firm infrastructure, given client-confidentiality concerns.
 
 What is the core tradeoff?
 
-- A) Operational control (self-hosted) versus operational burden (managed) — there is no capability difference in what tools the agent can call.
-- B) Self-hosted agents cannot use custom tools.
-- C) Managed agents are always less secure than self-hosted ones.
-- D) Managed agents cannot access private infrastructure at all.
+- A) Operational control versus operational burden — the real tradeoff, since tool-calling capability doesn't differ between self-hosted and managed deployments.
+- B) Self-hosted agents are structurally unable to register or call any custom tools the firm defines.
+- C) Managed execution environments are always less secure than a self-hosted deployment, regardless of configuration.
+- D) Managed agents cannot reach any private firm infrastructure under any circumstances.
 
 **Question 13.** An attorney asks whether routine NDA review (a fixed checklist: check parties, term, governing law) and complex M&A contract review should both be built the same way — as either a fixed workflow or an agent.
 
 What is the deciding factor?
 
-- A) Whether the task is well-defined and repeatable versus high-ambiguity with a path that depends on intermediate findings.
-- B) Whether the task involves more than three tools.
-- C) Whether the team prefers Python or TypeScript.
-- D) Whether the task needs to run in under 30 seconds.
+- A) Whether the task is well-defined and repeatable versus high-ambiguity, with a path that depends on intermediate findings.
+- B) Whether the task involves calling more than three tools during a single review.
+- C) Whether the review team prefers writing the automation in Python, in TypeScript, or in another general-purpose scripting language.
+- D) Whether the review needs to finish running in under 30 seconds.
 
 **Question 14.** A "clause-research subagent" has a vague description: "Helps with clauses." The main agent rarely delegates to it even when clause research is clearly needed.
 
 What is the most likely cause and fix?
 
-- A) The description drives delegation choices; rewriting it to state specifically what the subagent does and when to use it will most directly fix under-delegation.
-- B) The subagent needs more tools; add several more clause-related tools to its definition.
-- C) Subagents cannot be delegated to unless they are registered in `.mcp.json`.
-- D) The main agent's temperature is too low to consider delegating.
+- A) The description drives delegation choices; rewriting it to state specifically what it does fixes under-delegation.
+- B) The subagent needs more tools, so add several more clause-related tools, such as citation lookup and precedent tagging, to its definition.
+- C) Subagents cannot be delegated to unless they are explicitly registered in `.mcp.json`.
+- D) The main agent's sampling settings are too conservative for it to consider delegating tasks.
 
 **Question 15.** The firm wants a hard guarantee that `redline_suggest` is never applied more than twice to the same clause within one review session, regardless of what the model decides mid-conversation.
 
 What is the correct enforcement mechanism?
 
-- A) A system prompt instruction stating the two-edit limit clearly.
-- B) A note in the tool's description mentioning the limit.
-- C) A hook that tracks per-clause call counts and blocks the tool call once the limit is reached.
-- D) Few-shot examples showing an agent stopping after two edits.
+- A) A system prompt instruction, stated clearly near the top of the prompt, explaining the two-edit-per-clause limit in plain language for the agent to follow.
+- B) A note added to the tool's own description mentioning the two-edit limit.
+- C) A hook that tracks per-clause call counts and blocks the call once the limit is reached.
+- D) Few-shot examples showing an agent stopping itself after two edits to a clause.
 
 ---
 
@@ -164,136 +164,136 @@ Helios Connect, a SaaS company, is integrating Claude into its live customer-sup
 
 **Question 16.** Customers see Claude's response appear incrementally, word by word, in the chat widget as it's generated. Which technique enables this, and why?
 
-- A) Streaming, so the UI can render output incrementally and reduce perceived latency.
-- B) The Batch API, since it's designed for real-time feedback.
-- C) Increasing max_tokens so the full response arrives faster.
-- D) Polling a status endpoint every second.
+- A) Streaming, since it lets the UI render output incrementally, reducing perceived latency.
+- B) The Batch API, since it was designed specifically for real-time, low-latency customer-facing feedback during live chat sessions.
+- C) Raising max_tokens so the full response arrives to the customer more quickly overall.
+- D) Polling a status endpoint once per second until the full response becomes available.
 
 **Question 17.** A live chat reply needs `check_order_status` called mid-conversation and the result fed back before the reply finishes, with a customer actively waiting.
 
 Which API fits, and why?
 
-- A) The Batch API, because it's cheaper per token.
-- B) The Batch API, because it supports mid-request tool calls.
-- C) The synchronous Messages API with streaming, since the customer is waiting live and the flow needs a tool call answered within the same request.
-- D) The synchronous Messages API without streaming, since streaming and tool use are mutually exclusive.
+- A) The Batch API, because it charges a lower per-token rate than the synchronous API.
+- B) The Batch API, because it supports a tool call being answered partway through a single request.
+- C) The synchronous Messages API with streaming, since the customer is waiting live and the tool call must be answered within the same request.
+- D) The synchronous Messages API without streaming, since streaming and tool use cannot be combined in one request.
 
 **Question 18.** Every chat turn sends the same 4,000-token support policy and tone guidelines, followed by the evolving conversation history, which varies per turn.
 
 What optimization most directly reduces both latency and cost across many turns?
 
-- A) Move the policy into a few-shot example block instead.
-- B) Switch to the smallest available model regardless of quality.
-- C) Place the stable policy/tone instructions first, enable prompt caching, and put the varying conversation history after it.
-- D) Truncate the policy text to save tokens.
+- A) Move the 4,000-token policy into a few-shot example block instead of the system prompt.
+- B) Switch to the smallest available model for every single turn regardless of the resulting quality tradeoff for customers.
+- C) Place the stable policy and tone instructions first in the system prompt and enable prompt caching.
+- D) Truncate the policy text down to save a few tokens on every request.
 
 **Question 19.** The `create_ticket` schema requires a `resolution_summary` field on every ticket. Many tickets are still open with no resolution yet, and Claude has started inventing placeholder text like "resolved by agent" rather than reporting none.
 
 What schema change fixes this?
 
-- A) Remove the field from the schema entirely.
-- B) Add a prompt instruction telling the model not to invent values.
-- C) Make `resolution_summary` nullable so its absence can be reported truthfully.
-- D) Lower the temperature to reduce invented values.
+- A) Remove the `resolution_summary` field from the schema entirely so it can't be misused.
+- B) Add a prompt instruction telling the model never to invent placeholder values for the resolution field on open tickets.
+- C) Make `resolution_summary` nullable so a genuine absence can be reported truthfully.
+- D) Reduce the model's sampling randomness so it invents fewer placeholder values overall.
 
 **Question 20.** Two calls to `check_order_status` for the same order return different estimated delivery dates, and there's no way to tell which is correct from context alone.
 
 What should the integration do?
 
-- A) Average the two dates.
-- B) Surface both candidate values to a human agent for review rather than silently picking one and telling the customer.
-- C) Always trust the first call's result.
-- D) Discard the order lookup entirely.
+- A) Average the two conflicting delivery-date estimates and present the result as fact.
+- B) Surface both candidate values to a human agent for review rather than silently picking one.
+- C) Always trust whichever call to `check_order_status` returned its result first.
+- D) Discard the order lookup result entirely and tell the customer no delivery information is currently available at all.
 
 **Question 21.** The chatbot occasionally outputs a `create_ticket` payload as free text that fails to parse as JSON, crashing the ticket-creation step in about 2% of cases.
 
 What is the most reliable fix?
 
-- A) Wrap the parse in a try/catch and retry with "valid JSON only" appended to the prompt.
-- B) Add a JSON-repair library to fix common syntax issues before parsing.
-- C) Ask for YAML output instead, since it's more forgiving of formatting drift.
-- D) Define `create_ticket` as a tool with an input schema matching the ticket structure, and read the data from the structured `tool_use` block instead of parsing free text.
+- A) Wrap the JSON parse in a try/catch and retry the same request with "valid JSON only" appended to the prompt.
+- B) Add a JSON-repair library that patches common syntax issues in the free-text output before parsing it.
+- C) Ask the model for YAML output instead, since it tends to be more forgiving of formatting drift.
+- D) Define `create_ticket` as a tool with a matching input schema, and read the payload from the structured `tool_use` block instead of free text.
 
 **Question 22.** Since switching `create_ticket` to strict schema-constrained tool use, payloads always parse successfully, but some tickets are labeled `priority: low` despite the customer describing a full outage.
 
 What should the team conclude and do?
 
-- A) Strict schemas eliminate syntax errors, not semantic errors — add a validation step that checks priority classification against message content on top of schema compliance.
-- B) The schema needs stricter enum types to fix this.
-- C) max_tokens is too low, truncating output mid-generation.
-- D) Abandon tool use and return to free-text tickets with human review.
+- A) Schemas eliminate syntax errors, not semantic ones; add a validation step checking priority against the message.
+- B) The schema needs stricter enum types on the priority field to fix this.
+- C) max_tokens is set too low, truncating the ticket payload mid-generation before validation even has a chance to run against the customer's original outage description.
+- D) Abandon tool use entirely and go back to unstructured free-text tickets with human review.
 
 **Question 23.** Customers occasionally attach screenshots of error dialogs. The integration currently runs OCR on the screenshot and sends only the extracted text to Claude, and responses are poor whenever OCR mangles the error code.
 
 What is the most direct fix?
 
-- A) Send the screenshot image itself as a content block alongside the customer's message, using Claude's native vision input instead of relying solely on OCR text.
-- B) Increase max_tokens so the model works harder on the degraded OCR text.
-- C) Switch to a larger model, since bigger models are always better at reading noisy text.
-- D) Reject screenshot attachments entirely.
+- A) Send the screenshot image itself as a content block, using Claude's native vision input instead of relying on OCR text.
+- B) Raise max_tokens substantially so the model can work harder at interpreting the degraded, OCR-mangled error text it receives.
+- C) Switch to a larger model, since bigger models always read noisy or garbled text better.
+- D) Reject screenshot attachments from customers entirely going forward.
 
 **Question 24.** The support widget needs to serve many concurrent chat sessions from different customers at once, without one customer's request blocking another's.
 
 What must the integration layer support to do this?
 
-- A) Streaming, since only streaming supports concurrency.
-- B) The Batch API, since it's the only way to run more than one request at a time.
-- C) A single request handling all sessions concatenated together, since Claude parallelizes internally.
-- D) Async/concurrent request handling, so multiple API calls can be in flight at once without blocking on each other.
+- A) Streaming, since only a streamed response can support more than one customer session at once.
+- B) The Batch API, since it's the only mechanism that runs more than one request at a time.
+- C) A single request that concatenates every active customer session together into one payload, since Claude parallelizes work internally across sessions.
+- D) Async, concurrent request handling so multiple calls stay in flight without blocking each other.
 
 **Question 25.** The company plans to run the same chat integration through both the direct Anthropic API and a cloud-hosted equivalent for different regional deployments.
 
 What should the team expect?
 
-- A) The Messages API contract stays conceptually the same across vendors, though auth/plumbing and feature-rollout timing can differ.
-- B) The cloud-hosted equivalent requires a completely different prompting approach and schema design.
-- C) Batch processing is unavailable on all third-party vendor integrations.
-- D) Extraction accuracy and latency are guaranteed identical across vendors.
+- A) The Messages API contract stays conceptually the same across vendors, though auth, plumbing, and feature-rollout timing can differ.
+- B) The cloud-hosted equivalent requires an entirely different prompting approach and a redesigned schema.
+- C) Batch processing is unavailable across every third-party vendor integration without exception.
+- D) Extraction accuracy and latency are guaranteed to be identical across every vendor.
 
 **Question 26.** The team enables extended thinking for complex troubleshooting conversations that use tool calls across several turns.
 
 What must the integration layer do correctly?
 
-- A) Ignore thinking content entirely, since it never affects downstream turns.
-- B) Convert thinking output into a separate tool call.
-- C) Discard thinking content only when tools are involved.
-- D) Handle the thinking content block as distinct from the final answer text, typically preserving it appropriately across the multi-turn tool-use conversation.
+- A) Ignore thinking content entirely, since it never has any effect on later turns.
+- B) Convert the thinking output into a separate tool call so the reasoning gets logged the same way every other tool result is logged.
+- C) Discard thinking content, but only on turns where a tool was also called.
+- D) Treat the thinking block as distinct from the final answer text across the multi-turn conversation.
 
 **Question 27.** Finance asks for an accurate per-conversation cost breakdown for the chat integration, but the current cost model only estimates based on average message length.
 
 What should the improved cost model account for separately?
 
-- A) Only cache read tokens, since caching is the dominant cost driver.
-- B) Only output tokens, since input is effectively free.
+- A) Only cache read tokens, since caching is assumed by finance to already be the single dominant cost driver across the pipeline.
+- B) Only output tokens, since input tokens are treated as effectively free.
 - C) Input tokens, output tokens, and cache read/write tokens, since each is priced differently.
-- D) A flat per-conversation fee regardless of token usage.
+- D) A flat per-conversation fee that ignores how much was actually generated.
 
 **Question 28.** A new engineer argues the team can skip code review on the chat widget's surrounding application code since "the AI part is the risky part."
 
 What is the correct response?
 
-- A) Review should be skipped for any code that calls an external API.
-- B) Code review is unnecessary once evals pass.
-- C) Only the prompt needs review; the surrounding code is low-risk by definition.
-- D) Standard SDLC practices — code review, testing, version control — still apply to the application code around Claude; integrating an LLM doesn't replace engineering discipline.
+- A) Review should be skipped for any code that simply calls an external API.
+- B) Code review becomes unnecessary for that code once the evals are passing.
+- C) Only the prompt itself needs review; the surrounding application code is low-risk by definition.
+- D) Standard SDLC practices — review, testing, version control — still apply to the surrounding application code, not just the prompt.
 
 **Question 29.** A single long-running agent session is reused across an entire shift to handle chats from many different, unrelated customers, and the team notices Claude referencing a previous customer's order details in a new customer's chat.
 
 What is the best fix?
 
-- A) Reduce temperature to prevent cross-referencing.
-- B) Start a fresh session for each new customer conversation rather than accumulating unrelated context in one long-running session.
-- C) Ask the model to "ignore earlier customers" at the start of each new chat.
-- D) Increase the context window so more history fits without confusion.
+- A) Reduce the model's sampling randomness across every session to prevent it from cross-referencing details between different prior customers.
+- B) Start a fresh session for each new customer conversation rather than reusing one long-running session.
+- C) Ask the model to "ignore earlier customers" at the start of every new chat.
+- D) Widen the context window so more history fits without the model getting confused.
 
 **Question 30.** A troubleshooting conversation is very long, and the team wants Claude to produce a maximally detailed final resolution summary, considering a very long requested output.
 
 What tradeoff must they account for?
 
-- A) None — input and output tokens are budgeted completely independently.
-- B) Input and output share the same context-window budget, so a very long conversation history leaves less room for a long output, and vice versa.
-- C) Output length has no effect on latency.
-- D) Long outputs are always truncated regardless of context window size.
+- A) None — input and output tokens draw from two completely independent budgets.
+- B) Input and output share the same context-window budget, so a long history leaves less room for a long output.
+- C) The length of the output has no measurable effect on response latency.
+- D) Long outputs are truncated automatically by the platform no matter how large the underlying context window happens to be.
 
 ---
 
@@ -307,136 +307,136 @@ GlobalGuard operates a content-moderation service that classifies user-generated
 
 Which approach best fits the default path?
 
-- A) The highest-capability tier available, to guarantee quality on every post.
-- B) Whichever tier is cheapest per token regardless of task fit.
-- C) The same tier used for the company's hardest reasoning tasks, for consistency.
-- D) A fast, low-latency tier suited to high-volume/low-complexity classification, reserving a higher tier only for posts flagged as ambiguous.
+- A) The highest-capability tier available for every post, to guarantee quality regardless of cost.
+- B) Whichever tier happens to be cheapest per token, regardless of how well it fits the task.
+- C) The same tier the company uses for its hardest reasoning tasks across every product line, chosen for consistency of behavior rather than fit to this specific task.
+- D) A fast, low-latency tier for high-volume, low-complexity classification, reserving a higher tier for flagged posts.
 
 **Question 32.** A small fraction of posts require nuanced judgment (satire versus genuine hate speech, or context-dependent slang) where the fast default model produces inconsistent classifications.
 
 What is the most targeted fix?
 
-- A) Add more few-shot examples to the fast model's prompt for every post.
-- B) Route only the flagged ambiguous posts to a higher-capability tier or one with extended/adaptive thinking enabled, keeping the fast path for everything else.
-- C) Switch every post to the highest-capability tier to be safe.
-- D) Increase max_tokens for all posts.
+- A) Add more few-shot examples covering satire, slang, and context-dependent cases to the fast model's prompt for every single post it classifies.
+- B) Route only the flagged ambiguous posts to a higher-capability tier, or one with extended thinking enabled.
+- C) Switch every post in the pipeline to the highest-capability tier to be safe.
+- D) Raise max_tokens across the board so the model has more room to reason.
 
 **Question 33.** The service floats to "whatever model is latest" in production. After a routine model update, classification thresholds shifted noticeably for borderline posts, with no code change on the team's side.
 
 What should the team do differently?
 
-- A) Pin a specific model version in production and deliberately test before upgrading, rather than always floating to latest.
-- B) Nothing — behavior drift across releases is expected and requires no process.
-- C) Roll back to the oldest available model version permanently.
-- D) Disable all prompt caching to prevent drift.
+- A) Pin a specific model version in production and test any upgrade deliberately, rather than always floating to whatever is latest.
+- B) Nothing — threshold drift across model releases is expected, and there's no need to make the pipeline more deterministic.
+- C) Roll back permanently to the oldest model version the API still supports.
+- D) Disable all prompt caching across the pipeline to prevent behavior from drifting.
 
 **Question 34.** Moderation output needs a consistent label set (`hate_speech`, `harassment`, `spam`, `none`), but detailed prose instructions describing the categories haven't produced consistent output across languages.
 
 What technique is most likely to help?
 
-- A) Write an even longer, more detailed prose description of the categories.
-- B) Lower the temperature to zero.
+- A) Write an even longer, more detailed prose description of the four categories, translated carefully into all forty supported languages.
+- B) Reduce the model's sampling randomness to zero so labels stop varying.
 - C) Provide 2–3 few-shot examples in multiple languages demonstrating the exact desired labeling.
-- D) Ask the model to restate the categories before classifying.
+- D) Ask the model to restate the category definitions before it classifies each post.
 
 **Question 35.** A post thread is very long (reply chains with 100+ comments), and the team wants a maximally detailed moderation report per comment, considering a very long requested output.
 
 What tradeoff must they account for?
 
-- A) Input and output share the same context-window budget, so a long input thread leaves less room for a long output, and vice versa.
-- B) Long outputs are always truncated regardless of context window size.
-- C) Output length has no effect on latency.
-- D) Input and output tokens are budgeted completely independently.
+- A) Input and output share the same context-window budget, so a long thread leaves less room for output.
+- B) Long outputs are truncated automatically by the platform regardless of how large the context window happens to be.
+- C) The length of the output has no measurable effect on response latency.
+- D) Input and output tokens draw from two completely independent budgets.
 
 **Question 36.** The moderation prompt currently places the specific post text before the general policy instructions and desired label format in every request.
 
 Why might reordering improve both consistency and cacheability?
 
-- A) Order has no effect on either consistency or caching.
-- B) Placing instructions last always improves model attention.
-- C) Stable, role-defining policy instructions belong first (system prompt or first block) so they form a consistent, cacheable prefix; post-specific content should come after as the varying part.
-- D) Reordering only affects cost, never consistency.
+- A) Order has no measurable effect on either output consistency or on caching.
+- B) Placing instructions at the very end of the prompt always improves how the model attends to them.
+- C) Stable policy instructions belong in the system prompt as a consistent, cacheable prefix, with post-specific content placed after.
+- D) Reordering only affects cost, and has no bearing on labeling consistency.
 
 **Question 37.** Finance wants to know exactly how much the moderation service costs per post, but the team currently estimates cost only from average prompt length.
 
 What should be instrumented instead?
 
-- A) Actual token usage per request — input, output, and cache — attributed per post, rather than an estimate from average length.
-- B) Wall-clock latency per post, used as a cost proxy.
-- C) Number of API calls only, regardless of token count.
-- D) A flat cost assumption based on post character count.
+- A) Actual token usage per request — input, output, and cache — attributed per post.
+- B) Wall-clock latency per post, used as a rough proxy for cost.
+- C) The raw number of API calls made per day across the whole pipeline, regardless of how many tokens each one actually used.
+- D) A flat cost assumption based only on the post's character count.
 
 **Question 38.** An engineer writes an automated eval that asserts the moderation label must exactly match a fixed reference string for a sample post, and the eval fails intermittently even though the labels look correct on manual review.
 
 What is the most likely issue with the eval design?
 
-- A) The model is broken and producing wrong answers.
-- B) LLM output is non-deterministic across calls; exact-string-match evals are the wrong tool — evals should tolerate reasonable variation (e.g., checking for required content/structure) rather than asserting exact text.
-- C) The eval needs a larger reference string.
-- D) Temperature should be increased to fix the intermittent failures.
+- A) The model itself is broken and is simply producing wrong answers on this sample.
+- B) LLM output is non-deterministic; exact-string-match evals are the wrong tool for checking it.
+- C) The eval needs a longer reference string to compare against.
+- D) Raise the sampling randomness so the eval's supposedly deterministic comparison passes more consistently.
 
 **Question 39.** Posts arrive with full raw platform metadata dumps (every field of the post object) that bloat the prompt with mostly-irrelevant data, slowing the pipeline and increasing cost.
 
 What is the best fix?
 
-- A) Increase max_tokens to accommodate the extra data.
-- B) Prune the metadata to the relevant fields before it enters the prompt, rather than passing raw dumps.
+- A) Raise max_tokens to make room for the extra metadata fields already defined in the platform's schema for every post object.
+- B) Prune the metadata down to the relevant fields before it enters the prompt.
 - C) Switch to a model with a larger context window so the bloat matters less.
-- D) Summarize the metadata with a second Claude call before classifying.
+- D) Summarize the metadata with a separate Claude call before the classification call.
 
 **Question 40.** For very long comment threads, the team notices moderation misses violations in the middle of the thread while catching issues in the opening and closing comments well.
 
 What is the most effective mitigation?
 
-- A) Switch to a model with an even larger context window.
-- B) Add an instruction telling the model to "pay equal attention to the whole thread."
-- C) Alphabetize the comments before classifying.
-- D) Put a brief overview or key-facts summary at the start of the input and organize the detailed content under clear section headers, mitigating the tendency to attend most to the beginning and end of long inputs.
+- A) Switch to a model with an even larger context window than the current one.
+- B) Add an instruction telling the model to "pay equal attention to the whole thread, especially the middle comments" before classifying.
+- C) Alphabetize the comments in the thread before sending them for classification.
+- D) Put a brief key-facts summary at the start of the input and organize detail under clear section headers.
 
 **Question 41.** A moderation report confidently states a post "contains a direct threat of violence," but on manual review the post was actually a quote from a news article being discussed critically.
 
 What practice would most help catch this class of error before action is taken?
 
 - A) Trust confident, fluent-sounding output as evidence of correctness by default.
-- B) Increase the model's temperature so answers sound less confident.
-- C) Shorten the report so there's less room for errors.
-- D) Apply defensive parsing and skepticism toward confident output — verify key claims against the source post rather than accepting fluency as correctness.
+- B) Raise the model's sampling randomness across the pipeline so its answers about threats sound noticeably less confident.
+- C) Shorten the report so there is less surface area for errors to hide in.
+- D) Apply defensive parsing and skepticism toward confident output — verify key claims against the source post.
 
 **Question 42.** Detailed prose asking the model to "always output valid structured JSON with these exact fields" still produces occasional free-text preambles before the JSON.
 
 What is the more reliable approach?
 
-- A) Repeat the JSON instruction more emphatically.
-- B) Post-process every response to strip text before the first `{`.
-- C) Increase max_tokens so there's room for both the preamble and the JSON.
-- D) Use tool-use/schema-constrained output so the structure is enforced by the API mechanism rather than requested through prose.
+- A) Repeat the JSON-formatting instruction even more emphatically in the prompt.
+- B) Post-process every response to strip any text before the first `{`, instead of adding a hook that enforces the JSON format up front.
+- C) Raise max_tokens so there's room in the response for both the preamble and the JSON.
+- D) Use tool-use or schema-constrained output so structure is enforced by the API rather than requested through prose.
 
 **Question 43.** The team wants to add an exploratory step that scans a user's full posting history for repeat-offense context before moderating the current post, but worries the exploration will bloat the main context with mostly-irrelevant historical detail.
 
 What is the best structural approach?
 
-- A) Load the entire posting history directly into the main prompt every time.
-- B) Skip historical context entirely to avoid the bloat risk.
-- C) Increase the context window so the full history always fits.
-- D) Have a subagent perform the historical scan in an isolated context and return only a distilled, relevant summary to the main moderation step.
+- A) Load the user's entire posting history directly into the main moderation prompt on every request.
+- B) Skip historical context entirely to avoid the bloat risk from a long posting history.
+- C) Widen the context window so the full posting history always fits regardless of length.
+- D) Have a subagent perform the historical scan in an isolated context and return only a distilled summary.
 
 **Question 44.** For the simplest, most common moderation case (obvious spam links), the team is deciding between a zero-shot prompt and a multi-shot prompt with several examples.
 
 What consideration should drive the choice?
 
-- A) Multi-shot is always strictly better regardless of task simplicity.
-- B) Zero-shot is required whenever latency matters at all.
-- C) The choice has no effect on cost or latency.
-- D) For a simple, well-understood, high-volume task, zero-shot may be sufficient and cheaper; multi-shot earns its extra token cost on tasks needing specific formatting or edge-case consistency.
+- A) Multi-shot prompting is always strictly better than zero-shot for every moderation task, regardless of how simple or high-volume it is.
+- B) Zero-shot is required whenever latency matters at all, no matter the task.
+- C) The choice between zero-shot and multi-shot has no effect on cost or latency.
+- D) For a simple, well-understood, high-volume task, zero-shot may be sufficient and cheaper than multi-shot.
 
 **Question 45.** The moderation prompt has been modified informally by several engineers over time with no record of what changed or why, making it hard to diagnose a recent uptick in false positives.
 
 What practice would have prevented this?
 
-- A) Locking the prompt so no one can ever change it again.
-- B) Treating prompts as versioned artifacts, similar to code, so changes are tracked and regressions can be attributed and rolled back.
-- C) Only allowing one designated engineer to ever read the prompt.
-- D) Rewriting the prompt from scratch every quarter.
+- A) Lock the prompt so that no one is ever able to change it again.
+- B) Treat prompts as versioned artifacts, similar to code, so changes are tracked and attributable.
+- C) Allow only one designated engineer to ever read the moderation prompt.
+- D) Rewrite the moderation prompt completely from scratch every quarter regardless of whether the current one is working well.
 
 ---
 
@@ -450,136 +450,136 @@ You support a 30-person QA team's use of Claude Code, custom skills, slash comma
 
 What is the most likely cause?
 
-- A) The new engineer needs to run `/memory` to activate memory files.
-- B) CLAUDE.md requires an explicit `@import` from the project root to take effect at all.
-- C) The conventions live only in `~/.claude/CLAUDE.md` on the teammate's machine — user-level config that never travels through version control.
-- D) The conventions file exceeded a size limit and was silently truncated.
+- A) The new engineer needs to run a memory-refresh command to activate the team's memory files.
+- B) A project CLAUDE.md requires an explicit import statement from the project root before it takes effect at all.
+- C) The conventions live only in the teammate's personal, user-level configuration, which never travels through version control.
+- D) The conventions file exceeded a size limit and was silently truncated on checkout.
 
 **Question 47.** A nightly CI job invokes Claude Code to triage failing test runs and consistently hangs until timeout, with no visible error in the logs.
 
 What is the most likely cause?
 
-- A) The job is missing `-p`/`--print` (headless mode), so the process is waiting for interactive input the CI runner never provides.
-- B) The test runs are too large for Claude Code to process.
-- C) The CI runner lacks permission to call the Claude API.
-- D) The repository's CLAUDE.md is malformed.
+- A) The job is missing headless/print mode, so it waits for interactive input the CI runner never provides.
+- B) The nightly test runs are simply too large in volume for the triage tool to process within a single invocation at all.
+- C) The CI runner lacks permission to call the underlying model API.
+- D) The repository's CLAUDE.md file is malformed and failing to parse.
 
 **Question 48.** A downstream dashboard parses Claude Code's test-triage output with regex to auto-file defect tickets, and the parser breaks whenever output formatting drifts slightly between runs.
 
 What is the robust fix?
 
-- A) Harden the regex with more permissive fallback patterns.
-- B) Run with `--output-format json` and a `--json-schema` defining the triage-findings structure for machine-parseable output.
-- C) Post the entire raw output as a single ticket comment instead of parsing it.
-- D) Add a stronger prompt instruction never to deviate from the format.
+- A) Harden the parsing regex with more permissive fallback patterns instead of adopting a formal output schema.
+- B) Run with a JSON output format and a schema for the triage-findings structure, so output is machine-parseable by construction.
+- C) Post the entire raw, unstructured output as a single comment on the ticket instead of parsing it at all.
+- D) Add a stronger prompt instruction telling the model never to deviate from the format, without adding any real validation of what comes back.
 
 **Question 49.** The team's `/scan-flaky-tests` custom command prints thousands of lines of historical test-run data, and testers report that Claude's answers about their actual task get noticeably worse right after running it.
 
 What frontmatter change fixes this?
 
-- A) `argument-hint`, so testers scope the analysis more narrowly.
-- B) `context: fork`, so the command's verbose output runs in an isolated sub-agent context and only a summary returns to the main conversation.
-- C) `allowed-tools`, restricting the command to read-only operations.
-- D) Removing the command entirely.
+- A) An argument hint, so testers scope the flaky-test analysis more narrowly before running it.
+- B) A forked-context setting, so the command's verbose output runs in an isolated sub-agent context.
+- C) An allowed-tools restriction, limiting the command to read-only operations only.
+- D) Remove the `/scan-flaky-tests` command entirely rather than adding any kind of hook or scoping to gate its verbose output.
 
 **Question 50.** An internal `/generate-test-fixtures` skill is meant only to create new fixture files from a template, but an audit finds a session where it also ran shell commands that modified unrelated config files.
 
 What is the correct guardrail?
 
-- A) Add a warning in the skill's instructions telling Claude never to run shell commands.
-- B) Require testers to commit their work before running any skill.
-- C) Convert the skill into a slash command, since commands cannot run tools.
-- D) Configure `allowed-tools` in the skill's frontmatter to permit only file-creation operations, making Bash unavailable during execution.
+- A) Add a warning inside the skill's own instructions telling Claude never to run shell commands.
+- B) Require testers to commit their work before running any skill, as a safety net.
+- C) Convert the skill into a slash command instead, since commands supposedly cannot run tools.
+- D) Configure the skill's allowed-tools setting to permit only file-creation operations, making Bash unavailable during execution.
 
 **Question 51.** A QA engineer needs to understand how a large, unfamiliar test-automation framework's fixture system works before writing new tests, and worries that reading dozens of files will exhaust context before implementation begins.
 
 What is the best approach?
 
-- A) Read every file in the framework in one pass to be thorough.
-- B) Skip exploration and infer the architecture from directory names.
-- C) Split the work across two separate terminal windows.
-- D) Use the Explore subagent for the discovery phase so verbose exploration happens in an isolated context and only a summary returns to the main conversation.
+- A) Read every file in the framework in one long pass to be maximally thorough.
+- B) Skip exploration entirely and infer the architecture from directory names alone.
+- C) Split the exploration work across two separate terminal windows running the same session in parallel to save time.
+- D) Use the Explore subagent for the discovery phase so verbose exploration stays in an isolated context.
 
 **Question 52.** Mid-session, context is nearly full of verbose discovery output, but the engineer still needs to implement the new tests in the same session and wants to preserve key findings.
 
 What should they do?
 
-- A) Start a brand-new session and rely on memory of what was learned.
-- B) Run `/compact` to summarize the conversation and reduce context usage while preserving key information.
-- C) Delete the project CLAUDE.md temporarily to free context space.
-- D) Continue working; Claude automatically discards irrelevant context.
+- A) Start a brand-new session and rely on memory of what was already learned.
+- B) Run the compact command to summarize the conversation and reduce context usage.
+- C) Temporarily delete the project's CLAUDE.md file to free up context space.
+- D) Keep working as-is; irrelevant context from the fixture-system exploration is discarded automatically without any action needed.
 
 **Question 53.** A multi-step Claude Code task that reads a test-config file, calls an internal MCP tool to fetch environment status, and writes a defect-triage report produces a wrong final report. Trace logs show the config was read correctly and the MCP tool returned valid data.
 
 Where should debugging focus next?
 
-- A) Re-read the config file again, since that's the earliest step.
-- B) The network connection to the MCP server, since that's the most complex step.
-- C) The step between receiving the MCP tool's valid data and producing the final report — since inputs were confirmed correct, the divergence is most likely in how the model reasoned about or transformed that data afterward.
-- D) Nothing — a wrong final report with correct inputs means the task should simply be re-run.
+- A) Re-read the config file again, since that was the earliest step in the pipeline.
+- B) Inspect the network connection to the MCP server, since that's the most complex step.
+- C) The step between receiving the MCP tool's valid data and producing the final report, since the inputs were already confirmed correct.
+- D) Nothing further — a wrong final report produced from correct config data and correct MCP tool output means the whole task should simply be re-run from scratch.
 
 **Question 54.** A test-environment provisioning tool integration fails, and the team can't tell whether the failure is in their integration code (bad auth, wrong endpoint) or in something the model did.
 
 What is the correct first diagnostic step?
 
-- A) Assume it's a model problem and rewrite the prompt.
-- B) Switch to a different model to see if the failure persists.
-- C) Restart the CI runner and try again.
-- D) Isolate whether the failure occurred at the integration layer (the actual API/tool call and its response) versus in the model's output, by examining the trace of exactly what was sent and received.
+- A) Assume the failure is a model problem and immediately start rewriting the prompt.
+- B) Switch to a different underlying model to see whether the failure persists.
+- C) Restart the CI runner and try the provisioning step again without changes.
+- D) Isolate whether the failure is in the integration layer's API call and response, or in the model's output.
 
 **Question 55.** The internal defect-tracking system needs to be reachable from Claude Code sessions across the whole QA org, not just one team, and should be maintainable by the platform team independently of any consuming application.
 
 What is the best approach?
 
 - A) Build an MCP server exposing defect-tracking operations as tools, shared across the org.
-- B) Have each team paste defect-tracker API credentials into their own CLAUDE.md.
-- C) Hard-code defect-tracking logic into each team's custom skill separately.
-- D) Ask each engineer to curl the defect-tracker API manually when needed.
+- B) Have each team paste defect-tracker API credentials directly into its own CLAUDE.md file.
+- C) Hard-code defect-tracking logic separately inside each team's own custom skill.
+- D) Ask each engineer to curl the defect-tracker API manually whenever it's needed.
 
 **Question 56.** An MCP server for the test-case management system exposes both a `search_test_cases` tool and a way for agents to see what test suites exist without an exploratory search call.
 
 What is the second capability an example of?
 
-- A) An MCP tool, functionally identical to `search_test_cases`.
-- B) An MCP resource — content/catalog visibility distinct from a tool, which performs an action.
-- C) A built-in tool provided by the platform automatically.
-- D) A Claude Code Skill.
+- A) An MCP tool, functionally identical to `search_test_cases`, just returning the same unstructured text.
+- B) An MCP resource — content or catalog visibility distinct from a tool, which performs an action.
+- C) A built-in tool that the platform provides automatically to every agent.
+- D) A Claude Code Skill packaged specifically for the test-case system.
 
 **Question 57.** The team is deciding whether an internal MCP server for test-environment provisioning should run as a local stdio process per QA engineer's machine or as a remote, centrally-hosted network service.
 
 What should drive the decision?
 
-- A) stdio servers are always faster regardless of deployment context.
-- B) MCP only supports one communication pattern, so there's no real decision to make.
-- C) Remote servers cannot expose tools, only resources.
-- D) Where the server needs to run relative to the client and who needs access — local stdio for per-machine/local resources, remote/network hosting for centrally shared services accessed by many clients.
+- A) Local stdio servers are always faster than remote servers regardless of deployment context.
+- B) MCP only supports one communication pattern, so there is no real decision to make here.
+- C) Remote servers are structurally unable to expose tools, only resources.
+- D) Where the server must run and who needs access — local for per-machine use, remote for centrally shared services.
 
 **Question 58.** The team's `.mcp.json`, committed to the repository, currently has a defect-tracker API token hardcoded directly in the file.
 
 What is the correct fix?
 
-- A) Base64-encode the token before committing it.
-- B) Rotate the token weekly instead of removing it from the file.
-- C) Move the token to environment-variable expansion (e.g., `${DEFECT_TRACKER_TOKEN}`) so the secret isn't committed to version control.
-- D) Move `.mcp.json` to a private repository instead.
+- A) Base64-encode the token before committing the file to the repository.
+- B) Rotate the token weekly on a fixed schedule instead of ever removing it from the committed configuration file.
+- C) Move the token to environment-variable expansion so the secret is never committed to version control.
+- D) Move the entire `.mcp.json` file into a private repository instead.
 
 **Question 59.** An audit finds that several MCP-connected tools grant broader access (e.g., full test-suite deletion rights) than any actual QA workflow requires.
 
 What is the correct remediation, consistent with least-privilege principles?
 
-- A) Add logging so misuse can be reviewed after the fact.
-- B) Leave access as-is, since no misuse has been observed yet.
-- C) Scope the exposed tools down to only the operations actual workflows require, removing unnecessary broad capabilities rather than just monitoring them.
-- D) Add a confirmation prompt before any deletion.
+- A) Add logging around the broad access so misuse can be reviewed after the fact.
+- B) Leave access as-is for now, since no misuse has actually been observed yet.
+- C) Scope the exposed tools down to only the operations actual workflows require, removing unnecessary broad capabilities.
+- D) Add a confirmation prompt before any deletion operation is allowed to run.
 
 **Question 60.** The platform team is choosing how to expose a one-off, team-specific test-report-formatting workflow used by a single small QA squad, versus a widely-reused environment-health-check capability needed by every agent across the org.
 
 How should each be built?
 
-- A) The one-off report-formatting workflow as a Skill or custom tool scoped to that team; the widely-reused environment-health-check capability as an MCP server or built-in tool maintained centrally and shared across all consuming agents.
-- B) Both as MCP servers, since MCP is the correct choice for any shared capability.
-- C) Both as Skills, since Skills are always reusable.
-- D) Both as built-in tools, since built-in tools require the least setup.
+- A) The one-off workflow as a team-scoped Skill; the widely-reused capability as a centrally maintained MCP server or built-in tool.
+- B) Build both as MCP servers, since MCP is claimed to be the correct choice for any shared capability.
+- C) Build both as Skills, since Skills are assumed to always be reusable.
+- D) Build both as built-in tools, since built-in tools supposedly require the least setup.
 
 ---
 # Answer Key — Practice Exam 5
@@ -594,11 +594,11 @@ How should each be built?
 
 **3. C** — A financially/legally significant rule needs deterministic enforcement via a hook that blocks the send outright. A, B, and D all remain probabilistic prompt compliance, which is exactly what's failing at the observed rate.
 
-**4. C** — Forced tool choice on a specific tool guarantees that tool runs first; later turns proceed normally. `tool_choice: "any"` (B) guarantees some tool call, but not which one. A and D are probabilistic.
+**4. C** — Forcing tool choice onto a specific tool guarantees that tool runs first; later turns proceed normally. `tool_choice: "any"` (B) guarantees some tool call, but not which one. A and D are probabilistic.
 
 **5. B** — Removing tools unrelated to the agent's core role directly shrinks the candidate set the agent must reason over, improving selection reliability. A adds prompt overhead without removing capability bloat; C and D don't address tool-selection reliability at all.
 
-**6. A** — Structured error metadata (category, retryable flag, description) lets the agent decide how to respond appropriately. Blanket retry (B) wastes calls on non-retryable failures. Asking the model to guess (C) is strictly worse than the tool reporting it. D reduces frequency without fixing the missing information.
+**6. A** — Structured error metadata (category, retryable flag, description) lets the agent decide how to respond appropriately. Blanket retry (B) wastes calls on non-retryable failures. Asking the model to guess from context (C) is strictly worse than the tool reporting it. D reduces failure frequency without fixing the missing information, and leaves the same undifferentiated response format in place.
 
 **7. B** — "No matching clause" is a valid empty result, not a failure — return success with an empty set. A hides real signal. C invents an unnecessary extra step. D patches symptoms while the underlying success/error conflation remains.
 
@@ -622,9 +622,9 @@ How should each be built?
 
 **17. C** — A customer waiting live for a reply that requires a mid-request tool call needs the synchronous Messages API (with streaming for responsiveness); the Batch API cannot answer a tool call within a single request the way this flow needs. A and B misdescribe the Batch API; D is a false claim — streaming and tool use are not mutually exclusive.
 
-**18. C** — Only a shared prefix is cacheable; placing stable content first and variable content last maximizes cache hits, reducing both latency and cost. A, B, and D either break the cacheable prefix or degrade quality without addressing caching.
+**18. C** — Only a shared prefix is cacheable; placing stable content first in the system prompt and variable content last maximizes cache hits, reducing both latency and cost. A, B, and D either break the cacheable prefix or degrade quality without addressing caching.
 
-**19. C** — Making the field nullable lets the model truthfully report a genuine absence instead of inventing a value to satisfy a required field. B and D rely on probabilistic compliance or lose data; A removes the field's value entirely.
+**19. C** — Making the field nullable lets the model truthfully report a genuine absence instead of inventing a value to satisfy a required field. B and D rely on probabilistic compliance; A removes the field's value entirely.
 
 **20. B** — Conflicting values with no way to resolve them from context should be surfaced for human review with both candidates, not resolved arbitrarily. A, C, and D all discard information or guess.
 
@@ -658,7 +658,7 @@ How should each be built?
 
 **35. A** — Input and output share one context-window budget, so a long input thread directly constrains available output length and vice versa. B, C, and D misstate this relationship.
 
-**36. C** — Stable instructions first (ideally cacheable) and variable content after both improves consistency (clear role separation) and caching. A, B, and D misstate the effect of ordering.
+**36. C** — Stable instructions first (ideally in the system prompt, cacheable) and variable content after both improves consistency (clear role separation) and caching. A, B, and D misstate the effect of ordering.
 
 **37. A** — Actual per-request token usage (input/output/cache) attributed per post gives an accurate cost picture; estimates from average length or unrelated proxies (B, C, D) don't.
 
@@ -678,19 +678,19 @@ How should each be built?
 
 **45. B** — Versioning prompts like code enables attribution and rollback for quality regressions. A, C, and D are impractical overcorrections that don't provide the actual missing capability (change tracking).
 
-**46. C** — User-level CLAUDE.md never travels through version control, so a new engineer cloning the repo won't see it; team conventions must live in a committed project-level file. A, B, and D misdescribe how CLAUDE.md loading actually works.
+**46. C** — User-level configuration never travels through version control, so a new engineer cloning the repo won't see it; team conventions must live in a committed project-level file instead. A, B, and D misdescribe how that configuration actually loads.
 
 **47. A** — Missing headless/non-interactive mode causes the process to wait for input a CI runner never provides, producing a hang rather than a clean error. B, C, and D would typically produce different, more specific failure signatures.
 
-**48. B** — Schema-constrained JSON output via `--output-format json`/`--json-schema` is machine-parseable by construction, removing the fragile dependency on prose format stability. A, C, and D are reactive or abandon the structured-parsing requirement.
+**48. B** — Schema-constrained JSON output is machine-parseable by construction, removing the fragile dependency on prose format stability. A, C, and D are reactive or abandon the structured-parsing requirement.
 
-**49. B** — `context: fork` isolates verbose output in a sub-agent context so only a summary returns, directly fixing the described context pollution. A narrows scope but doesn't isolate output; C restricts capability, not output destination; D removes useful functionality.
+**49. B** — Forking the command's context isolates verbose output in a sub-agent context so only a summary returns, directly fixing the described context pollution. A narrows scope but doesn't isolate output; C restricts capability, not output destination; D removes useful functionality.
 
-**50. D** — `allowed-tools` is the enforcement mechanism that makes Bash structurally unavailable during the skill's execution. A is probabilistic and the violation already happened despite instructions; B mitigates damage rather than preventing it; C is a false claim about slash commands.
+**50. D** — Restricting the skill's allowed tools is the enforcement mechanism that makes Bash structurally unavailable during the skill's execution. A is probabilistic and the violation already happened despite instructions; B mitigates damage rather than preventing it; C is a false claim about slash commands.
 
 **51. D** — The Explore subagent isolates verbose discovery in a separate context, preserving the main conversation's budget for implementation. A floods context directly; B guesses instead of investigating; C doesn't share context between windows meaningfully.
 
-**52. B** — `/compact` summarizes the conversation to free context while preserving key information, the correct mid-session relief valve. A discards findings; C frees trivial space while losing standards; D describes behavior that doesn't exist.
+**52. B** — The compact command summarizes the conversation to free context while preserving key information, the correct mid-session relief valve. A discards findings; C frees trivial space while losing standards; D describes behavior that doesn't exist.
 
 **53. C** — Since the config and MCP data were both confirmed correct, the divergence is most likely in how that verified-correct data was subsequently reasoned about or transformed — that's where the trace should focus next. A and B re-check already-verified steps; D skips diagnosis entirely.
 
