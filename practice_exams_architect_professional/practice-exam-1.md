@@ -477,7 +477,7 @@ A healthcare client is deploying a Claude-powered system that processes patient 
 ---
 # Answer Key — Practice Exam 1
 
-**Quick key:** 1-B, 2-A, 3-C, 4-D, 5-A, 6-B, 7-C, 8-A, 9-D, 10-B, 11-A, 12-C, 13-D, 14-A, 15-B, 16-C, 17-D, 18-B, 19-C, 20-A, 21-D, 22-B, 23-C, 24-A, 25-A, 26-A, 27-D, 28-B, 29-C, 30-D, 31-B, 32-A, 33-C, 34-D, 35-B, 36-C, 37-D, 38-A, 39-B, 40-C, 41-D, 42-B, 43-C, 44-A, 45-D, 46-B, 47-C, 48-D, 49-B, 50-A, 51-C, 52-D, 53-B, 54-C, 55-D, 56-A, 57-B, 58-C, 59-D, 60-A
+**Quick key:** 1-B, 2-A, 3-C, 4-D, 5-A, 6-B, 7-C, 8-A, 9-D, 10-B, 11-A, 12-C, 13-D, 14-A, 15-B, 16-C, 17-D, 18-B, 19-C, 20-A, 21-D, 22-B, 23-C, 24-A, 25-A, 26-A, 27-D, 28-B, 29-C, 30-D, 31-B, 32-A, 33-C, 34-D, 35-B, 36-C, 37-D, 38-A, 39-B, 40-C, 41-D, 42-B, 43-C, 44-A, 45-D, 46-B, 47-C, 48-D, 49-B, 50-A, 51-C, 52-D, 53-B, 54-C, 55-D, 56-A, 57-B, 58-C, 59-D, 60-B
 
 ---
 
@@ -599,7 +599,7 @@ A healthcare client is deploying a Claude-powered system that processes patient 
 
 **59. D** — Evaluating specific task categories for genuine friction reduction versus added review overhead gives an evidence-based answer instead of assuming a blanket benefit either way. A and C over-assume benefit; B forecloses potential benefit without evaluation.
 
-**60. A** — Documenting the shared triage process turns individually re-derived knowledge into reusable operational knowledge, directly addressing the redundant-effort problem described. B accepts avoidable inefficiency; C and D propose disproportionate structural changes instead of the straightforward documentation fix.
+**60. B** — Documenting the shared triage process turns individually re-derived knowledge into reusable operational knowledge, directly addressing the redundant-effort problem described. A accepts avoidable inefficiency; C and D propose disproportionate structural changes instead of the straightforward documentation fix.
 
 ---
 
