@@ -34,108 +34,108 @@ Meridian Mobile, a regional telecom retailer, wants to modernize how it handles 
 
 **Question 1.** Discovery reveals the client's actual goal is reducing average escalation resolution time by unifying the three disconnected queues, at the same staffing level — not adding new self-service capabilities customers currently lack.
 
-- A) Frame the architecture around efficiency, building metrics around resolution time and handle volume rather than novel capability.
-- B) Frame the architecture around transformation, since consolidating three queues is inherently transformative.
-- C) Frame the architecture around cost reduction exclusively, regardless of what discovery revealed.
-- D) Skip framing around a specific value pillar, since the system either works or it doesn't.
+- A) Frame the architecture around efficiency, building resolution-time and handle-volume metrics rather than novel-capability claims.
+- B) Frame it around transformation instead, since collapsing three queues into one is inherently a transformational change no matter what discovery found.
+- C) Frame it around cost reduction only, on the assumption that staffing cost is always the real driver behind a queue-consolidation project like this.
+- D) Skip picking a specific value pillar entirely — a system that measurably works speaks for itself regardless of how the business frames its goals.
 
 **Question 2.** Escalation handling requires different steps depending on the issue category, customer tier, and information uncovered mid-conversation (for example, discovering a device is under an active recall).
 
-- A) A fixed workflow, since escalations follow a standard script regardless of variation.
-- B) An agentic pattern, since the right steps vary by case and depend on intermediate findings uncovered during handling.
-- C) An augmented LLM pattern, since one enhanced call is sufficient for any escalation.
-- D) Whichever pattern is fastest to prototype, since the patterns are functionally interchangeable.
+- A) A fixed workflow, since escalations of this kind always follow the same script no matter what the customer says mid-call.
+- B) An agentic pattern, since the right sequence of steps varies by case and depends on findings uncovered mid-conversation.
+- C) An augmented LLM pattern, since one retrieval-enhanced call is always treated as sufficient regardless of how the case actually unfolds.
+- D) Whichever pattern prototypes fastest, since fixed workflows, agentic patterns, and augmented calls are functionally interchangeable here.
 
 **Question 3.** The proposed design uses a coordinator agent delegating to specialized subagents (billing-dispute, device-warranty, network-outage-diagnostics, retention-offer).
 
-- A) Let each subagent communicate directly to whichever subagent needs its output next, to minimize hops.
-- B) Merge all four responsibilities into one subagent to avoid coordination overhead.
-- C) Let subagents communicate directly, but log the traffic for later review.
-- D) Route all inter-subagent communication through the coordinator, preserving observability, consistent error handling, and controlled information flow.
+- A) Let each subagent message whichever subagent needs its output next directly, skipping the coordinator entirely to minimize hops.
+- B) Merge all four responsibilities and their entire toolsets into a single subagent, trading specialization for less coordination overhead and simpler routing logic.
+- C) Let subagents talk to each other directly, but log the traffic afterward so the coordinator can review it during a later audit.
+- D) Route inter-subagent traffic through the coordinator to preserve observability, error handling, and controlled information flow.
 
 **Question 4.** Every subagent completes its assigned work correctly, but the coordinator's decomposition routes billing, device, and network escalations correctly while retention-eligible cases (customers actively threatening to cancel) are never routed to any subagent and silently fall through.
 
-- A) Add a fifth generic subagent for edge cases.
-- B) Give the existing subagents broader tool access so they can handle any escalation type.
-- C) Fix the coordinator's decomposition so it explicitly covers retention-eligible cases, rather than tuning the existing subagents.
-- D) Add a prompt instruction telling subagents to flag escalations they don't recognize.
+- A) Add a fifth, generic catch-all subagent whose only job is to absorb whatever escalation type the other four don't recognize as their own.
+- B) Give the existing subagents broader tool access, on the reasoning that any one of them could, in principle, be stretched to handle any escalation type.
+- C) Fix the coordinator's decomposition so it explicitly covers retention-eligible cases, instead of tuning the subagents that already work.
+- D) Add a prompt instruction telling every subagent to flag any escalation it personally doesn't recognize as its own to handle.
 
 **Question 5.** The design must align technical architecture to a specific business value pillar Meridian actually cares about, distinct from a generic "we added AI" narrative.
 
-- A) Any AI system inherently demonstrates transformation, so no further framing is needed.
-- B) Efficiency, transformation, productivity, cost, and performance SLAs are examples of such pillars; the chosen one should drive both the architecture and its success metrics.
-- C) Business value pillars are a sales concern, not an architectural one.
-- D) The pillar should be chosen after the system ships, based on whatever benefit is easiest to measure.
+- A) Any AI system inherently demonstrates transformation on its own, so no additional framing work is needed from the architect.
+- B) Efficiency, transformation, cost, and performance SLAs are example pillars; the chosen one should drive both architecture and metrics.
+- C) Treat business value pillars as a sales-team concern that the architecture itself doesn't need to reference at all, regardless of what discovery surfaced.
+- D) Choose the pillar after the system ships, based on whichever benefit turns out easiest to measure in hindsight, rather than up front.
 
 **Question 6.** Frontline escalation agents are skeptical of the new system and worried it will be used to justify headcount reductions; discovery interviews surface this repeatedly.
 
-- A) Ignore the sentiment since it's not a technical requirement.
-- B) Treat it as a real implicit constraint alongside the explicit technical requirements — it will shape adoption, rollout sequencing, and where human-in-the-loop checkpoints matter most.
-- C) Proceed with the technical design and let change management handle it separately with no architectural input.
-- D) Recommend against the project entirely based on the sentiment.
+- A) Ignore the sentiment entirely in the discussion, treating adoption concerns as something only change management should handle.
+- B) Treat it as a real implicit constraint shaping adoption and rollout sequencing, alongside the explicit technical requirements raised in discovery.
+- C) Proceed with the technical design and hand the sentiment entirely to change management, with no architectural input either way at all.
+- D) Recommend against the project outright, based on the sentiment alone and independent of the technical case for it entirely.
 
 **Question 7.** A stakeholder asks why the network-outage-diagnostics subagent uses a higher-capability, higher-cost model tier than the billing-dispute subagent.
 
-- A) Use the same tier everywhere for simplicity, regardless of task difficulty.
-- B) "Higher tier because it's more important" is a sufficient answer.
-- C) Avoid explaining tier differences, since stakeholders don't need technical detail.
-- D) Explain the tradeoff explicitly: outage diagnostics needs deeper reasoning over network telemetry that justifies the added cost/latency, while billing disputes are simpler and better served by a faster, cheaper tier.
+- A) Use the same tier everywhere for simplicity, regardless of how much reasoning depth each task actually needs.
+- B) Answer that a higher tier is used because outage work is simply "more important," without giving any further technical detail.
+- C) Avoid explaining the tier difference at all, on the assumption that stakeholders don't need or want technical detail.
+- D) Explain the tradeoff: outage diagnostics needs deeper telemetry reasoning, while billing disputes are simpler and cheaper to serve.
 
 **Question 8.** The architecture's current design produces a final retention-offer recommendation with no mechanism to learn from which offers customers actually accepted or rejected over time.
 
-- A) This is acceptable since the initial design already reflects best practice.
-- B) Feedback loops are a data science concern unrelated to the architecture.
-- C) Add a feedback loop capturing offer acceptance/rejection outcomes as a first-class architectural component, so the system can improve post-deployment.
-- D) Defer any feedback mechanism to a hypothetical future phase with no current design hooks.
+- A) Treat this as acceptable, since the initial design was validated at launch and already reflects best practice.
+- B) Treat feedback loops as a data-science concern that sits entirely outside the architecture, with no hooks needed in the system design.
+- C) Add a feedback loop capturing offer acceptance and rejection outcomes as a first-class architectural hook.
+- D) Defer any feedback mechanism to a hypothetical future phase, with no hooks for it in the current design.
 
 **Question 9.** The client wants a single enhanced LLM call — with retrieval of the customer's plan and billing history — to answer straightforward "why is my bill higher this month" questions, without any multi-step autonomous orchestration.
 
-- A) This calls for a full multi-agent architecture regardless of the simplicity of the task.
-- B) This cannot be built with Claude at all, since it doesn't involve an agent.
-- C) This requires a fixed workflow with at least five sequential steps.
-- D) An augmented LLM pattern (a single call enhanced with retrieval/tools) fits this simpler augmentation need without the overhead of agentic orchestration.
+- A) Build a full multi-agent architecture regardless of the task's simplicity, rewriting the system prompt for orchestration it doesn't need.
+- B) Conclude this cannot be built with Claude at all, on the reasoning that it isn't structured as a multi-step autonomous agent.
+- C) Require a structured fixed workflow with at least five sequential steps, regardless of how simple the underlying billing question actually is.
+- D) Use an augmented LLM pattern — a single call enhanced with retrieval — fitting this simpler need without agentic orchestration overhead.
 
 **Question 10.** The billing-dispute subagent's toolset has grown to include tools for tasks like device-shipping tracking and network-status lookups that are unrelated to billing disputes.
 
-- A) This capability bloat degrades tool-selection reliability; the unrelated tools should be removed or moved to a more appropriate subagent.
-- B) This has no architectural downside as long as the subagent's prompt is well-written.
-- C) More tools always improve a subagent's flexibility and should be encouraged.
-- D) The fix is to increase the subagent's context window.
+- A) Remove or relocate the unrelated tools, since capability bloat degrades tool-selection reliability.
+- B) Treat this as having no architectural downside, as long as the subagent's prompt is well-written enough to compensate.
+- C) Treat more tools as always improving a subagent's flexibility, and encourage adding still more over time.
+- D) Increase the subagent's context window instead, on the theory that a bigger window will fully offset the added tool count and keep selection reliable.
 
 **Question 11.** The coordinator currently processes each escalation sequentially through billing-dispute lookup, device-warranty lookup, and retention-offer scoring, even though device-warranty lookup and retention-offer scoring have no dependency on each other's output.
 
-- A) Combine device-warranty lookup and retention-offer scoring into a single subagent to avoid the sequencing question.
-- B) Run device-warranty lookup and retention-offer scoring as independent, parallel subagent calls once billing-dispute lookup completes, rather than sequentially.
-- C) Sequential processing is required for auditability.
-- D) Parallelization is not possible with a coordinator/subagent architecture.
+- A) Combine device-warranty lookup and retention-offer scoring into one subagent, so the sequencing question never has to be answered.
+- B) Run device-warranty lookup and retention-offer scoring as independent, parallel calls once billing-dispute lookup completes.
+- C) Treat sequential processing as required for auditability, regardless of whether the steps actually depend on each other.
+- D) Treat parallelization as impossible within a coordinator/subagent architecture in general, regardless of whether steps share any real dependency.
 
 **Question 12.** A regional VP unfamiliar with the technical details asks how the end-to-end escalation architecture should be described for a steering review.
 
-- A) Present only the model names and token costs involved.
-- B) Describe input → processing → output → feedback loop at a level the committee can evaluate against business outcomes, without requiring them to understand implementation internals.
-- C) Present the full technical architecture diagram with no simplification.
-- D) Skip a high-level description and go directly into an implementation demo.
+- A) Present only the model names and per-call token costs involved, leaving the actual escalation flow undescribed for the committee.
+- B) Describe input, processing, output, and the feedback loop at a level the committee can evaluate against business outcomes.
+- C) Present the full technical architecture diagram, including every subagent's internal prompt and tool schema, without any simplification for a non-technical audience.
+- D) Skip a high-level description entirely and go straight into a live implementation demo of the coordinator and subagents.
 
 **Question 13.** A competing vendor proposes a single, generalist agent holding every tool (billing, device, network, retention) rather than a coordinator with specialized subagents.
 
-- A) A single agent holding every tool and responsibility is more likely to suffer degraded tool-selection reliability than specialized subagents scoped to narrower roles.
-- B) A single generalist agent scales better as tool count grows.
-- C) Specialized subagents are strictly a cost-increasing choice with no reliability benefit.
-- D) There's no meaningful architectural difference between the two approaches.
+- A) A single agent holding every tool is more likely to suffer degraded tool-selection reliability than specialized subagents.
+- B) A single generalist agent scales better as tool count grows, since it avoids maintaining separate subagent boundaries.
+- C) Treat specialized subagents as strictly a cost-increasing choice, with no reliability benefit to offset the added complexity.
+- D) Treat the two approaches as architecturally equivalent, with no meaningful reliability or cost difference between a generalist agent and specialized subagents.
 
 **Question 14.** The escalation architecture must eventually support a new escalation category (streaming-bundle disputes) planned for next year, but detailed requirements aren't available yet.
 
-- A) Build full support for streaming-bundle disputes now, guessing at requirements.
-- B) Ignore future escalation categories until requirements exist.
-- C) Refuse to proceed with the current phase until the future requirements are finalized.
-- D) Design the current decomposition and tool/subagent boundaries with reasonable extensibility in mind, without over-building for speculative, undefined requirements.
+- A) Build full support for streaming-bundle disputes now, filling in the missing requirements with reasonable-sounding guesses.
+- B) Ignore future escalation categories entirely until concrete requirements exist for them, even ones already announced as coming next year.
+- C) Refuse to proceed with the current phase of work until every future requirement is fully finalized and signed off by stakeholders.
+- D) Design the current decomposition with reasonable extensibility in mind, without over-building for speculative, undefined requirements down the line.
 
 **Question 15.** The steering committee wants documentation they can hand to a new engineering team in a year, who will extend the system without the original architect present.
 
-- A) Document only the final configuration values, since implementation is self-explanatory.
-- B) Rely on the original architect remaining available indefinitely instead of documenting.
-- C) Document the architecture and the reasoning ("why") behind key decisions — pattern choices, decomposition boundaries, tier selections — not just the final "what."
-- D) Documentation is unnecessary if the code is well-organized.
+- A) Document only the final configuration values, on the assumption that a well-organized implementation is self-explanatory.
+- B) Plan around the original architect remaining available indefinitely on call, instead of investing in documentation now.
+- C) Document the reasoning behind key decisions — pattern choices, decomposition, tier selections — not just the final configuration values.
+- D) Treat documentation as unnecessary, on the assumption that clean, well-organized code already makes the reasoning self-evident.
 
 ---
 
@@ -147,108 +147,108 @@ Harborview Retail Group, a multi-category apparel retailer, wants Claude to help
 
 **Question 16.** Most buyer questions to the copilot are moderately complex; a small fraction require deep multi-step reasoning across many SKUs and vendors, and a small fraction are simple lookups (for example, "current on-hand units for SKU 4471").
 
-- A) Route based on task difficulty — a fast tier for simple lookups, a balanced tier for typical questions, and a higher-capability tier (potentially with extended thinking) reserved for the deep multi-step cases.
-- B) Always use the highest-capability tier to guarantee quality on every question.
-- C) Use one fixed model tier for all questions, regardless of complexity.
-- D) Always use the fastest tier to minimize cost, accepting quality loss on complex questions.
+- A) Route by task difficulty: a fast tier for lookups, a balanced tier for typical questions, and a higher tier for deep multi-step cases.
+- B) Use the highest-capability tier on every question, to guarantee quality regardless of how simple the underlying lookup is.
+- C) Use one fixed model tier for every question, treating complexity as irrelevant to tier selection, since routing logic adds engineering overhead the team would rather avoid.
+- D) Use the fastest tier on every question to minimize cost, accepting the resulting quality loss on the harder cases.
 
 **Question 17.** Every request to the copilot sends the same long system prompt (merchandiser persona, formatting rules, category taxonomy) followed by retrieved SKU and vendor data that varies per query.
 
-- A) Put retrieved content first since it's most relevant to the specific query.
-- B) Place the stable system prompt first and enable prompt caching, with the varying retrieved content after it, to reduce both latency and cost across the high query volume.
-- C) Alternate system instructions and retrieved content throughout the prompt.
-- D) Order doesn't affect cost or latency for this use case.
+- A) Put the retrieved content first, on the reasoning that it's the part most relevant to the specific query being asked.
+- B) Place the stable system prompt first and enable caching, with retrieved content after it, to reduce latency and cost.
+- C) Alternate system instructions and retrieved content throughout the prompt so both stay close to whatever they relate to.
+- D) Treat prompt ordering as having no effect on cost or latency for a use case like this one, even at high query volume with heavy caching potential.
 
 **Question 18.** The merchandising corpus mixes long-form vendor contracts and category strategy memos with short structured data (a table of weekly sell-through by SKU).
 
-- A) Use the largest possible chunk size for everything to avoid needing multiple strategies.
-- B) One chunking and indexing strategy tuned for long-form documents can serve both content types equally well.
-- C) Chunking and indexing strategy should match each data shape — long-form documents need different chunking than short structured records, or retrieval quality degrades for whichever type doesn't match.
-- D) Structured sell-through data should be excluded from retrieval entirely.
+- A) Use the largest possible chunk size for everything, skipping schema- or shape-specific tuning, on the theory that one large-chunk strategy is simplest to build and maintain long-term.
+- B) Assume one chunking and indexing strategy tuned for long-form documents can serve both content types equally well.
+- C) Match chunking and indexing strategy to each data shape — long-form documents need different chunking than short structured records.
+- D) Exclude the structured sell-through data from retrieval entirely, relying only on the long-form documents.
 
 **Question 19.** Buyer queries range from exact lookups ("current inventory for SKU 4471") to conceptual questions ("how has the athleisure category's margin story evolved this year").
 
-- A) Use only embedding similarity search for every query type.
-- B) Match retrieval strategy to query pattern: structured/metadata filtering for exact lookups, embedding similarity search for conceptual questions, and hybrid retrieval where both are needed.
-- C) Use only structured/metadata filtering for every query type.
-- D) Query pattern doesn't affect which retrieval approach is appropriate.
+- A) Use only embedding similarity search for every query type, regardless of whether the query is an exact lookup.
+- B) Match retrieval strategy to query pattern — metadata filtering for exact lookups, embeddings for conceptual questions, hybrid where both are needed.
+- C) Use only structured metadata filtering for every query type, including the open-ended conceptual ones.
+- D) Treat query pattern as entirely irrelevant to which retrieval approach is appropriate, since a single, well-tuned embedding index should already generalize across every kind of query without further tailoring.
 
 **Question 20.** Buyers need each margin or forecast claim reliably mapped to a specific source document and section, and generic prose responses often lose this mapping.
 
-- A) Ask the model, in prose, to "always cite sources" without further structure.
-- B) Add citations after the fact by searching for a plausible source for each claim.
-- C) Require structured output pairing each claim with its source (document, section, excerpt) so citation mapping survives synthesis rather than being reconstructed from memory.
-- D) Append a general bibliography of consulted documents at the end of each response.
+- A) Ask the model, in prose, to "always cite sources" without any further structure or output validation behind it.
+- B) Add citations after generation by searching for a plausible-looking source for each claim already produced, matching phrasing rather than verifying the underlying figure.
+- C) Require structured output pairing each claim with its source (document, section, excerpt) so citation mapping survives synthesis.
+- D) Append a general bibliography of consulted documents at the end of each response, without linking individual claims to it.
 
 **Question 21.** Two retrieved sources disagree on a vendor's quoted unit cost by a small margin — likely because one reflects a pre-rebate price and the other a post-rebate net price.
 
-- A) Average the two figures and present the average.
-- B) Always prefer whichever source was retrieved first.
-- C) Present both figures explicitly annotated as a discrepancy, with source attribution and the likely methodological explanation (e.g., pre-rebate vs. post-rebate), rather than silently picking one.
-- D) Omit the unit cost figure entirely since sources disagree.
+- A) Average the two figures together and present the average as the unit cost, treating the discrepancy as noise rather than a real methodological difference.
+- B) Prefer whichever source was retrieved first, regardless of which figure it happens to contain or how the two prices were actually calculated.
+- C) Present both figures explicitly, annotated as a discrepancy, with source attribution and the likely methodological explanation.
+- D) Omit the unit cost figure from the response entirely, since the two sources disagree and no single number can be confidently reported.
 
 **Question 22.** A prompt asking the model to "always output valid structured JSON with source fields" still occasionally produces a conversational preamble before the JSON.
 
-- A) Use tool-use/schema-constrained output so the structure is enforced by the API mechanism rather than requested through prose alone.
-- B) Repeat the instruction more emphatically in the prompt.
-- C) Post-process every response to strip leading text before the first `{`.
-- D) Increase max_tokens to leave room for both the preamble and the JSON.
+- A) Use tool-use or schema-constrained output so structure is enforced by the API mechanism, not by adjusting temperature.
+- B) Repeat the same instruction more emphatically, in stronger language, elsewhere in the prompt.
+- C) Post-process every response to strip any leading text that appears before the first `{`.
+- D) Increase `max_tokens` so there's room for both the preamble and the JSON to fit, plus extra buffer in case the model adds trailing commentary after the closing brace too.
 
 **Question 23.** The copilot needs to connect to a proprietary internal vendor-catalog system, exposing search and lookup capabilities to multiple other internal Claude-powered tools beyond just the merchandising copilot.
 
-- A) Hard-code the vendor-catalog integration into this copilot's application code only.
-- B) Paste the entire vendor catalog into every prompt.
-- C) Build an MCP server exposing the vendor-catalog operations as tools/resources, reusable across the multiple internal Claude-powered tools that need it.
-- D) Require each consuming tool to reimplement its own integration independently.
+- A) Hard-code the vendor-catalog integration directly into this one copilot's application code, with no reuse path for other tools.
+- B) Paste the entire vendor catalog into every prompt sent to every consuming tool, refreshing the pasted copy manually whenever the catalog changes upstream.
+- C) Build an MCP server exposing the vendor-catalog operations as tools and resources, reusable across the internal tools that need it.
+- D) Require each consuming tool to reimplement its own vendor-catalog integration independently, from scratch.
 
 **Question 24.** The team is deciding between exposing the full vendor catalog directly in every prompt versus letting the agent query a catalog resource only when needed.
 
-- A) Loading the full catalog up front is always preferable for completeness.
-- B) There's no meaningful difference in context cost between the two approaches.
-- C) The catalog should never be exposed to the agent in any form.
-- D) Progressive discovery (querying a catalog resource as needed) scales better than loading the entire catalog into context up front, especially as the catalog grows.
+- A) Treat loading the full catalog up front as always preferable, since completeness matters more than context cost, latency, or how much the catalog is expected to grow.
+- B) Treat the two approaches as having no meaningful difference in context cost between them.
+- C) Refuse to expose the catalog to the agent in any form, forcing all lookups through a human intermediary.
+- D) Use progressive discovery — querying a catalog resource as needed — scaling better than loading the entire catalog up front.
 
 **Question 25.** A buyer asks a chain-of-thought-friendly question requiring the model to reason step by step across several vendor contracts and sell-through reports before recommending a reorder quantity.
 
-- A) Zero-shot prompting with no reasoning guidance is always equally effective.
-- B) The model cannot reason across multiple documents regardless of prompting approach.
-- C) A chain-of-thought prompting approach, allowing explicit intermediate reasoning steps, is well suited to this kind of multi-document synthesis question.
-- D) Chain-of-thought prompting is only useful for coding tasks.
+- A) Use zero-shot prompting with no reasoning guidance, treating it as always equally effective regardless of task structure.
+- B) Treat multi-document reasoning as something the model cannot do at all, regardless of prompting approach or how the reasoning steps are structured.
+- C) Use a chain-of-thought approach, allowing explicit intermediate reasoning, suited to this multi-document synthesis question.
+- D) Restrict chain-of-thought prompting to coding tasks only, on the assumption it doesn't transfer to document synthesis.
 
 **Question 26.** The copilot wants to standardize prompt fragments (citation format, category taxonomy, formatting rules) across several different buyer-facing features so changes propagate consistently.
 
-- A) Duplicate the fragments into each feature's prompt independently.
-- B) Modular prompts are the same thing as prompt caching.
-- C) Standardization across features isn't achievable with prompt design.
-- D) Use modular, composable, versioned prompt fragments shared across features — a maintainability lever distinct from caching (a cost/latency lever) or Skills (a capability-packaging lever).
+- A) Duplicate the fragments into each feature's own structured prompt independently, updating each copy by hand.
+- B) Treat modular prompt fragments as the same mechanism as prompt caching, and rely on caching alone to keep them consistent.
+- C) Treat standardization across features as unachievable through prompt design, since only a single shared system prompt could keep them consistent, and even that doesn't scale well across many features.
+- D) Use modular, composable, versioned prompt fragments shared across features — distinct from caching (a cost/latency lever) or Skills (a capability lever).
 
 **Question 27.** The copilot occasionally returns confident, well-cited-looking margin figures that, on manual review, misstate a specific number from the correctly retrieved source report.
 
-- A) Trust the fluent, well-formatted output as evidence of correctness.
-- B) Increase output length so there's more room to be correct.
-- C) Apply defensive validation — verify extracted figures against the actual source excerpt rather than accepting confident, well-formatted phrasing as proof of accuracy.
-- D) This is not something an architecture can address; it's purely a model limitation with no mitigation.
+- A) Trust the fluent, well-formatted output as evidence that the cited figure is correct, since citation formatting alone signals accuracy.
+- B) Increase output length, on the reasoning that more room in the response leaves more space for the model to work out and double-check the correct figure.
+- C) Apply defensive validation, verifying extracted figures against the source excerpt rather than trusting confident phrasing.
+- D) Treat this as purely a model limitation with no architectural mitigation available, regardless of what verification steps might catch it.
 
 **Question 28.** The team debates whether buyer-facing latency SLAs should factor into model tier selection for the merchandising copilot.
 
-- A) Only cost should factor into tier selection, never latency.
-- B) SLAs are a stakeholder-communication concern with no bearing on technical architecture.
-- C) Latency should never factor into model or architecture decisions.
-- D) Yes — model tier selection should weigh accuracy needs against the latency and cost the use case's SLA can tolerate, not default to the most capable tier regardless of SLA.
+- A) Let only cost factor into tier selection, treating latency as irrelevant to the decision.
+- B) Treat SLAs as a stakeholder-communication concern only, with no bearing on technical architecture or model tier selection decisions at all.
+- C) Treat latency as something that should never factor into model or architecture decisions.
+- D) Weigh accuracy against the SLA's latency and cost tolerance, rather than defaulting to peak capability.
 
 **Question 29.** A new model version is released with improved benchmark scores. The merchandising copilot currently floats to "latest" automatically in production.
 
-- A) Continue floating to latest automatically, since newer is always better.
-- B) Never upgrade models once the initial version is chosen.
-- C) Pin the current version in production and evaluate the new version against the platform's own tests before deliberately upgrading, since behavior can shift across releases even at improved benchmark scores.
-- D) Upgrade immediately without testing, since benchmark improvements guarantee production improvements.
+- A) Continue floating to latest automatically, on the reasoning that newer benchmark scores are validation enough on their own, regardless of behavioral drift risk.
+- B) Never upgrade models once the initial version is chosen, treating current behavior as permanently fixed and deterministic.
+- C) Pin the current version in production and evaluate the new version against the platform's own tests before deliberately upgrading.
+- D) Upgrade immediately without testing, on the assumption that benchmark improvements guarantee production improvements.
 
 **Question 30.** The copilot's context budget is a concern because both the system prompt/citation rules and the retrieved vendor/SKU data must fit alongside room for a detailed recommendation.
 
-- A) Input and output token budgets are entirely independent of each other.
-- B) This tradeoff only matters for very long documents, never for typical queries.
-- C) Output length has no practical limit regardless of input size.
-- D) Input and output share the same context-window budget, so architects must balance retrieved-content volume against the room needed for a detailed, well-cited answer.
+- A) Treat input and output token budgets as entirely independent, so schema design or content volume on one side never affects headroom on the other.
+- B) Treat this tradeoff as only mattering for unusually long documents, never for typical queries.
+- C) Treat output length as having no practical limit, regardless of how much input content is already in context.
+- D) Input and output share one context-window budget, so retrieved content must be balanced against room for a detailed answer.
 
 ---
 
@@ -260,108 +260,108 @@ Atlas Utilities operates a fleet of field-service technicians who service gas an
 
 **Question 31.** The team currently measures only technician first-time-fix rate and hasn't defined targets for latency, cost, or safety.
 
-- A) Latency and cost are operations concerns unrelated to evaluation design.
-- B) Define evaluation metrics spanning accuracy, latency, cost, and safety/security as first-class metrics — a system that improves first-time-fix rate but is too slow, too expensive, or unsafe still fails overall.
-- C) First-time-fix rate alone is sufficient since it's the system's primary purpose.
-- D) Safety metrics are only relevant for regulated industries.
+- A) Treat latency and cost as operations concerns that sit outside evaluation design entirely.
+- B) Define metrics spanning accuracy, latency, cost, and safety as first-class alongside first-time-fix rate.
+- C) Treat first-time-fix rate alone as sufficient, since it's the system's primary stated purpose and the only metric leadership originally asked to track.
+- D) Treat safety metrics as relevant only for explicitly regulated industries.
 
 **Question 32.** The evaluation dataset currently consists only of automated accuracy checks against a fixed labeled set of past dispatch tickets.
 
-- A) A single automated method is sufficient for any production system.
-- B) Replace the automated checks entirely with only human review.
-- C) Expand the labeled set indefinitely as the sole improvement lever.
-- D) Use mixed methodologies — automated eval for scale, human review for nuanced judgment calls, and adversarial/edge-case testing for safety-relevant paths — since no single method covers every failure mode.
+- A) Treat a single automated method as sufficient for any production system, regardless of what edge cases or safety-relevant paths it fails to cover.
+- B) Replace the automated checks entirely with human review as the sole evaluation method going forward.
+- C) Expand the labeled set indefinitely, treating dataset size as the only improvement lever available.
+- D) Use mixed methodologies — automated eval, human review, and adversarial testing — since no single method covers every failure mode.
 
 **Question 33.** The team wants to test whether a new prompt version improves technician-recommendation quality before rolling it out to all dispatch traffic.
 
-- A) Roll out the new prompt to all traffic immediately and monitor for problems.
-- B) Change the prompt and the model tier simultaneously to maximize potential improvement.
-- C) Skip testing since prompt changes are low-risk by nature.
-- D) Run an A/B test changing only the prompt version against a stable baseline, so any observed difference can be attributed to that one change.
+- A) Roll the new prompt out to all traffic immediately, watching for problems only after the fact instead of testing beforehand at all.
+- B) Change the prompt and the model tier at the same time, assuming deterministic output will make attribution easy afterward, even with two variables changing together.
+- C) Skip testing altogether, treating prompt changes as inherently low-risk regardless of how technician-facing recommendations might change.
+- D) Run an A/B test changing only the prompt version against a stable baseline, so any difference can be attributed to that change.
 
 **Question 34.** A dispatch recommendation cites the wrong required part number. Investigation shows the underlying parts-catalog lookup returned correct, current data, and the model's response paraphrased it inaccurately.
 
-- A) This is best characterized as a prompt/generation issue (inaccurate paraphrasing of correctly retrieved content), which calls for prompt or output-validation fixes rather than retrieval changes.
-- B) This is a retrieval problem; fix the indexing pipeline.
-- C) This cannot be diagnosed without retraining the model.
-- D) This is a model mismatch requiring a different model tier regardless of the specific failure.
+- A) Treat this as a prompt/generation issue, calling for prompt or output-validation fixes rather than retrieval changes.
+- B) Treat this as a retrieval problem and fix the indexing pipeline instead, even though the pipeline already returned correct, current data.
+- C) Treat this as impossible to diagnose without a full model retraining cycle, regardless of what the paraphrasing error actually indicates.
+- D) Treat this as a model-tier mismatch requiring a different, higher tier, regardless of what the investigation actually found about where the error occurred.
 
 **Question 35.** Immediately after a scheduled parts-catalog refresh, the dispatch assistant starts recommending obsolete part numbers, while model version and average latency are unchanged.
 
-- A) Suspect a temperature setting change, since confidence changed.
-- B) Suspect the model was silently updated by the provider.
-- C) Investigate the retrieval/indexing layer first, since the regression is tied specifically to the data refresh event with model and latency unchanged.
-- D) Suspect the context window shrank.
+- A) Suspect a temperature setting change, since the assistant's apparent confidence changed, even though no temperature parameter was actually touched in the refresh.
+- B) Suspect the model was silently updated by the provider, despite the version string staying the same.
+- C) Investigate the retrieval and indexing layer first, since the regression tracks the data refresh event with model and latency unchanged.
+- D) Suspect the context window shrank, rather than the structured retrieval layer that was just refreshed.
 
 **Question 36.** The team wants to reduce cost and latency for dispatch recommendations but is worried about hurting first-time-fix accuracy, and currently has no data on where the current configuration sits on that tradeoff curve.
 
-- A) Optimize cost/latency/accuracy jointly against the system's actual SLA and budget — the cheapest, fastest configuration that fails the accuracy bar isn't a win, and neither is maximizing accuracy at unsustainable cost.
-- B) Accuracy should always be maximized regardless of cost or latency implications.
-- C) Cost, latency, and accuracy should each be optimized independently, in isolation from one another.
-- D) This tradeoff cannot be measured, only guessed at.
+- A) Optimize cost, latency, and accuracy jointly against the system's actual SLA and budget, not any single dimension in isolation.
+- B) Maximize accuracy without regard to cost or latency, treating a slower, pricier configuration as always the safer choice.
+- C) Optimize cost, latency, and accuracy independently of each other, treating each as a fixed, deterministic target on its own.
+- D) Treat this tradeoff as unmeasurable, something that can only be guessed at rather than tested.
 
 **Question 37.** Production monitoring for the dispatch assistant currently reports only an overall weekly average accuracy score.
 
-- A) A single aggregate average is sufficient for production monitoring.
-- B) Monitoring should surface drift and outliers — a per-technician-specialty or per-issue-type breakdown — since an aggregate average can hide a specific failing segment even while looking healthy overall.
-- C) Weekly granularity is always sufficient regardless of system behavior.
-- D) Monitoring should track only cost, since accuracy is captured by the eval suite alone.
+- A) Treat a single aggregate average, once validated, as sufficient for production monitoring regardless of segment performance.
+- B) Have monitoring surface drift and outliers — a per-specialty breakdown — since an aggregate average can hide a failing segment.
+- C) Treat weekly granularity as always sufficient, regardless of how the system is actually behaving across specialties.
+- D) Have monitoring track only cost, on the assumption that accuracy is already fully captured by the eval suite alone.
 
 **Question 38.** The team proposes cutting human review of flagged low-confidence dispatch recommendations by 80%, citing a 96% aggregate accuracy score.
 
-- A) Segment accuracy by issue type and technician specialty before cutting review, since the aggregate figure can mask a specific segment performing far worse than the average.
-- B) Proceed with the cut based on the 96% aggregate figure alone.
-- C) Aggregate accuracy is definitionally representative of every segment.
-- D) Human review should never be reduced regardless of measured accuracy.
+- A) Segment accuracy by issue type and specialty before cutting review, since an aggregate figure can mask a failing segment.
+- B) Proceed with the review cut based on the 96% aggregate figure alone, without further segmentation.
+- C) Treat aggregate accuracy as definitionally representative of every individual segment.
+- D) Treat human review as something that should never be reduced, regardless of measured accuracy, segment performance, or the actual cost of maintaining it.
 
 **Question 39.** An A/B test shows a new prompt version improves first-time-fix rate, but the team has not checked whether it also changed the rate of recommending an on-site visit for issues that should have been resolved remotely.
 
-- A) First-time-fix rate alone is a sufficient signal to ship the change.
-- B) Check the remote-resolution-eligible failure mode specifically before shipping — an isolated first-time-fix improvement could be masking an increase in unnecessary on-site dispatches.
-- C) This failure mode is not something evaluation can measure.
-- D) Ship the change and monitor informally after the fact instead of testing beforehand.
+- A) Treat first-time-fix rate alone as a sufficient signal to ship the change without checking any other dispatch-outcome metric.
+- B) Check the remote-resolution-eligible failure mode before shipping, since a fix-rate gain could increase unnecessary dispatches unnoticed.
+- C) Treat this failure mode as something evaluation is structurally unable to measure, no matter how the test data or dispatch logs are instrumented.
+- D) Ship the change and monitor informally afterward, in place of testing for this specific failure mode beforehand.
 
 **Question 40.** The team wants to diagnose why a subset of technically accurate dispatch recommendations are rated poorly by technicians in post-job surveys.
 
-- A) Investigate a dimension beyond factual accuracy — e.g., clarity, completeness of instructions, or practicality in the field — since "accurate but poorly rated" points at a quality dimension the current eval doesn't measure.
-- B) Assume the accuracy metric is broken and discard it.
-- C) Increase the model's capability tier, assuming higher capability always improves ratings.
-- D) Ignore technician satisfaction scores in favor of the accuracy metric alone.
+- A) Investigate a dimension beyond accuracy, like clarity or field practicality, since "accurate but poorly rated" points at an unmeasured gap.
+- B) Assume the accuracy metric itself is broken and discard it outright, without checking any other explanation for the low ratings first.
+- C) Increase the model's capability tier, assuming higher capability always improves structured output ratings regardless of what technicians are actually reacting to.
+- D) Ignore technician satisfaction scores entirely, in favor of the accuracy metric alone, since surveys are harder to standardize than an automated check.
 
 **Question 41.** The team is optimizing token usage and notices the system sends the full ticket history plus a large static equipment-manual excerpt on every turn of multi-turn dispatch conversations.
 
-- A) This has no optimization opportunity since full history is always required.
-- B) Remove the equipment-manual excerpt entirely to save tokens.
-- C) Switch to a smaller model as the only lever for reducing token cost.
-- D) Apply prompt caching to the static equipment-manual excerpt and consider trimming or summarizing older turns of ticket history to reduce redundant token cost across a multi-turn conversation.
+- A) Treat this as having no optimization opportunity, on the assumption that full history is always required on every turn.
+- B) Remove the equipment-manual excerpt entirely, without an alternative source for the content it provided to technicians.
+- C) Switch to a smaller model as the only lever for reducing token cost, even though redundant static content is the larger driver.
+- D) Apply prompt caching to the static equipment-manual excerpt, and trim or summarize older ticket-history turns to cut token cost.
 
 **Question 42.** Logging captures every raw prompt and response for the dispatch assistant, and the team treats this as their observability strategy, but no one can identify emerging failure patterns from the volume of raw logs.
 
-- A) Raw logging at full volume is itself a sufficient observability strategy.
-- B) Reduce logging to save storage cost, with no other change.
-- C) Observability requires no structure as long as data is retained somewhere.
-- D) Redesign observability toward structured, aggregable signals — sampling, tagged failure categories, quality metrics by segment — since raw logs at volume aren't reviewable or actionable on their own.
+- A) Treat raw logging at full volume, by itself, as a sufficient and complete observability strategy for any production system regardless of scale.
+- B) Reduce logging volume to save storage cost, treating that as a full fix even though the signals stay unstructured and unreviewable.
+- C) Treat observability as requiring no structure at all, as long as every prompt and response is retained somewhere on disk indefinitely.
+- D) Redesign observability toward structured, aggregable signals — sampling, tagged categories, segment metrics — since raw logs aren't reviewable at volume.
 
 **Question 43.** The team wants to identify whether a recent quality regression was caused by a prompt change, a model version change, or an equipment-manual content update — all three happened in the same week.
 
-- A) Assume the most recent change is always the cause.
-- B) Revert all three changes without investigation, regardless of which (if any) caused the regression.
-- C) Attribution is impossible once multiple changes have shipped in the same week.
-- D) This is why changes should be tested and rolled out one variable at a time — with three simultaneous changes, attribution requires isolating and re-testing each change independently rather than guessing.
+- A) Assume whichever change shipped most recently is automatically the cause, without checking the other two changes at all.
+- B) Revert all three changes without investigation, regardless of which one, if any, actually caused the regression, and regardless of the cost of reverting each.
+- C) Treat attribution as impossible once multiple changes ship in the same week, even though each one could still be tested in isolation afterward.
+- D) This is why changes should ship one variable at a time — with three at once, attribution requires isolating and re-testing each independently.
 
 **Question 44.** An automated eval asserts that a dispatch-summary output must exactly match a fixed reference string, and the eval fails intermittently even on outputs a human reviewer would call correct.
 
-- A) The reference string needs to be longer.
-- B) The model is malfunctioning and needs retraining.
-- C) Temperature should be increased to fix the intermittent failures.
-- D) Exact-string-match evals are the wrong tool for inherently non-deterministic LLM output; the eval should check for required content/structure rather than exact text.
+- A) Make the reference string longer, on the assumption that added length will resolve the intermittent failures.
+- B) Conclude the model is malfunctioning and needs retraining, since its outputs can no longer be validated against the fixed string.
+- C) Increase the temperature setting to fix the intermittent failures, on the reasoning that more randomness will somehow stabilize matching.
+- D) Exact-string-match evals are the wrong tool for non-deterministic LLM output; the eval should check content and structure, not exact text.
 
 **Question 45.** Leadership wants a single number to represent "how good" the dispatch assistant is, to track over time.
 
-- A) A single number is always achievable and sufficient for any system's evaluation needs.
-- B) Use first-time-fix rate alone as the single number, since it's the system's stated purpose.
-- C) A single aggregate metric can be a useful top-line indicator, but should be presented alongside segment-level and multi-dimensional detail (accuracy, latency, cost, safety) so a healthy top-line number doesn't mask a specific failing area.
-- D) Refuse to provide any single summary metric under any circumstances.
+- A) Treat a single number as always achievable and sufficient on its own, regardless of how many dimensions quality actually spans.
+- B) Use first-time-fix rate alone as that single number, since it's the system's stated purpose and the metric leadership already recognizes.
+- C) Offer a single aggregate metric as a top-line indicator, but pair it with segment- and dimension-level detail so it doesn't mask a failing area.
+- D) Refuse to provide any single summary metric, under any circumstances leadership might reasonably ask for one to track.
 
 ---
 
@@ -373,108 +373,108 @@ Cascade Mutual Insurance is modernizing its claims-intake and reserve-estimation
 
 **Question 46.** The architecture team is finalizing data flow, retention, and access-logging design in the final week before launch, after core application logic for the claims system is already built.
 
-- A) This sequencing carries no risk since compliance can always be added right before launch.
-- B) Compliance only affects legal documentation, not system architecture.
-- C) State insurance data-privacy and retention requirements can force structural changes that are far more costly to retrofit than to design in from the start.
-- D) FedRAMP, not state insurance regulation, is the relevant regime for this client.
+- A) Treat this sequencing as carrying no real risk, on the assumption that compliance requirements can always be bolted on right before launch without touching core logic.
+- B) Treat compliance as affecting only legal documentation, with no bearing on the system's architecture.
+- C) State insurance data-privacy and retention rules can force structural changes far costlier to retrofit than to design in early.
+- D) Treat FedRAMP, rather than state insurance regulation, as the relevant regime for this client.
 
 **Question 47.** A team proposes requiring human approval on every single output the claims-intake system produces, framing it as the safest governance posture.
 
-- A) Maximal human review on every output is always the correct default for insurance AI systems.
-- B) Human reviewers are categorically less accurate than the model, making review counterproductive.
-- C) Blanket human-in-the-loop on every output defeats much of the system's value; HITL should be targeted at high error-cost or genuinely judgment-requiring decisions rather than applied universally.
-- D) This approach is required by GDPR regardless of other considerations.
+- A) Treat maximal human review on every single output as always the correct default posture for any insurance AI system, regardless of error cost.
+- B) Treat human reviewers as categorically less accurate than the model, making any review step counterproductive regardless of stakes.
+- C) Blanket human-in-the-loop on every output defeats much of the system's value; HITL should target high-stakes, judgment-requiring decisions specifically.
+- D) Treat this level of review as required by GDPR, regardless of the actual regulatory regime or error-cost profile of this specific program.
 
 **Question 48.** The claims system must identify and mitigate standard LLM risks — hallucination, prompt injection from claimant-submitted free text, and inconsistent output — as part of its design.
 
-- A) These risks only need to be addressed if they're observed in production first.
-- B) Design mitigations for each known failure mode as part of the architecture up front — e.g., grounding/verification for hallucination, input isolation and guardrails for injection, output validation for consistency — rather than as a reactive afterthought.
-- C) These risks are exclusive to non-insurance use cases.
-- D) A single generic guardrail addresses all three risk types equally well.
+- A) Address these risks only if and when they're observed in production first, rather than addressing them during design.
+- B) Design mitigations for each known failure mode up front — grounding, isolation, and output validation — rather than reacting after the fact.
+- C) Treat these risks as exclusive to non-insurance use cases, and entirely out of scope for a regulated claims system like this one.
+- D) Rely on a single generic guardrail to address all three distinct risk types equally well, without tuning specific to each mode.
 
 **Question 49.** The claims operations team asks whether the system's payout recommendations could produce disparate outcomes across different policyholder demographics.
 
-- A) This is not an architectural concern; it belongs entirely to legal/compliance review after launch.
-- B) Bias, fairness, and transparency are architecture concerns — evaluate whether training/eval data reflects the served population and measure for disparate impact rather than assuming it's absent.
-- C) Disparate impact is impossible in an LLM-based system by construction.
-- D) This concern only applies to systems making final payout decisions, not any assistive system.
+- A) Treat this as entirely a legal/compliance concern that belongs to review after launch, with no bearing on the architecture chosen beforehand.
+- B) Recognize bias and fairness as architecture concerns — check whether training/eval data reflects the served population and measure disparate impact.
+- C) Treat disparate impact as impossible in an LLM-based system by construction, since the model has no explicit demographic fields in its prompt.
+- D) Treat this concern as applying only to systems making final payout decisions, not to any assistive system.
 
 **Question 50.** The claims engineering team's Claude Code usage is inconsistent — some engineers have team conventions applied automatically, others don't, and internal MCP server access varies by machine.
 
-- A) Standardize CLAUDE.md hierarchy and shared MCP server configuration at the team/project level so behavior doesn't depend on individual local setup.
-- B) Have each engineer individually troubleshoot their own local configuration.
-- C) Restrict Claude Code usage to a single designated engineer to reduce variance.
-- D) Accept the inconsistency as an unavoidable cost of AI tooling adoption.
+- A) Standardize CLAUDE.md hierarchy and shared MCP configuration at the team level so behavior doesn't depend on local setup.
+- B) Have each engineer individually troubleshoot their own local configuration on an ad hoc basis.
+- C) Restrict Claude Code usage to a single designated engineer to reduce variance across the team.
+- D) Accept the inconsistency as an unavoidable cost of adopting AI tooling at all, since every engineer's local machine will always differ somewhat.
 
 **Question 51.** The team wants Claude Code-generated code changes in this regulated claims context to go through the same review rigor as any other change.
 
-- A) AI-assisted code should bypass standard review since it was "written by AI."
-- B) Standard SDLC practices — code review, testing, version control — still apply; Claude Code assisting with generation doesn't reduce the review rigor required for a regulated system.
-- C) Only a spot-check of AI-generated code is necessary.
-- D) Review requirements should be lower for AI-generated code than human-written code.
+- A) Let AI-assisted code bypass standard review, on the reasoning that it was "written by AI" rather than a person.
+- B) Keep standard SDLC practices — code review, testing, version control — in place regardless of whether Claude Code assisted with the generation.
+- C) Apply only a spot-check to AI-generated code, on the assumption that its output is already pre-validated.
+- D) Set a lower review bar for AI-generated code than for human-written code in this same regulated codebase, on the reasoning that Claude Code output needs less scrutiny.
 
 **Question 52.** A production incident traces back to a Claude Code-generated claims-calculation change. The team can't immediately tell whether the bug is in the generated code logic or in how the surrounding system integrated it.
 
-- A) Assume the bug is in the generated code without investigation.
-- B) Triage the same way any incident is triaged — isolate whether the issue is in the integration layer or the code/model output — using traces/logs to localize the actual failure point.
-- C) Disable Claude Code for the team entirely following any incident.
-- D) Roll back all recent Claude Code-assisted changes regardless of relevance.
+- A) Assume the bug is in the generated code itself, without further investigation into the integration layer.
+- B) Triage the same way any incident is triaged — isolate integration-layer versus code/model-output failure using traces and logs.
+- C) Disable Claude Code for the team entirely, as a blanket response to any incident involving it, regardless of what caused it.
+- D) Roll back all recent Claude Code-assisted changes, regardless of whether they're actually relevant to this specific incident.
 
 **Question 53.** The claims operations team wants a documented, repeatable workflow for a recurring task (generating a weekly reserve-adequacy summary) versus a one-off exploratory coding task.
 
-- A) Package the recurring, well-defined report workflow as a Skill for on-demand, consistent reuse; leave the one-off exploratory task as an unstructured session, since it doesn't need standing infrastructure.
-- B) Build both as ad hoc, undocumented prompts each time they're needed.
-- C) Build both as MCP servers regardless of reuse profile.
-- D) Recurring workflows and one-off tasks should be built identically.
+- A) Package the recurring report workflow as a Skill for on-demand, consistent reuse; leave the one-off task as unstructured.
+- B) Build both the recurring report and the one-off task as ad hoc, undocumented prompts each time either is needed.
+- C) Build both as dedicated MCP servers, regardless of how often either one is actually reused later on.
+- D) Treat recurring workflows and one-off tasks as needing to be built identically, with no real distinction between them.
 
 **Question 54.** The compliance team wants documented evidence of who accessed what claimant-related data through the system and when.
 
-- A) Design access-control and audit-logging as explicit architectural components satisfying identity validation, authorization, and monitoring requirements — not an implicit byproduct of normal operation.
-- B) Access logging is optional if the system has role-based permissions.
-- C) Audit logging can be added later without architectural impact.
-- D) Only failed access attempts need to be logged.
+- A) Design access-control and audit-logging as explicit components satisfying identity, authorization, and monitoring requirements.
+- B) Treat access logging as optional, as long as the system already has role-based permissions in place.
+- C) Treat audit logging as something that can be added later, with no real architectural impact from doing so.
+- D) Log only failed access attempts, on the assumption that successful, authorized access to claimant data never needs its own audit trail at all, since it was permitted.
 
 **Question 55.** The steering committee for this claims modernization includes claims-operations, legal, and engineering stakeholders with different priorities and vocabularies.
 
-- A) Communicate only with the engineering stakeholders, since they'll relay information to the others.
-- B) Skip stakeholder communication until the system is fully built.
-- C) Tailor architectural communication to each audience — tradeoffs framed in terms claims-operations and legal stakeholders can evaluate against their own priorities, not just engineering metrics.
-- D) Use identical technical documentation for all three audiences to save effort.
+- A) Communicate only with the engineering stakeholders, on the assumption they'll fully relay the relevant tradeoffs to operations and legal on their own.
+- B) Skip stakeholder communication of any kind until the system is fully built and ready to demo.
+- C) Tailor architectural communication to each audience, framing tradeoffs in terms claims-operations and legal can evaluate.
+- D) Use identical technical documentation for all three audiences, to save the effort of tailoring it.
 
 **Question 56.** Midway through the project, the claims team's requirements shift meaningfully based on a new state regulatory bulletin.
 
-- A) Treat this as a normal part of lifecycle management — re-engage discovery for the affected scope, communicate the tradeoff of the change to stakeholders, and adjust the design and timeline accordingly.
-- B) Refuse to incorporate the change since requirements were already agreed upon.
-- C) Incorporate the change silently without informing stakeholders of the impact.
-- D) Restart the entire project from scratch regardless of the change's actual scope.
+- A) Treat this as normal lifecycle management — re-engage discovery for the affected scope and communicate the change's tradeoff to stakeholders.
+- B) Refuse to incorporate the change, on the reasoning that requirements were already agreed upon earlier and shouldn't shift mid-project.
+- C) Incorporate the change silently, without informing stakeholders of its impact on scope, timeline, or downstream dependencies.
+- D) Restart the entire project from scratch, regardless of the change's actual scope or how much unaffected work already exists.
 
 **Question 57.** After launch, the architect's involvement is discussed as ending at handoff to the claims operations team.
 
-- A) This is the correct lifecycle model; monitoring and iteration are entirely the operations team's responsibility.
-- B) Lifecycle responsibility ends once the contract is signed.
-- C) Monitoring is only necessary if a major incident occurs.
-- D) Lifecycle management includes monitoring and iteration based on production signal as part of the architect's ongoing responsibility, not just discovery through handoff.
+- A) Treat this as the correct lifecycle model, with monitoring and iteration becoming entirely the operations team's responsibility.
+- B) Treat lifecycle responsibility as ending once the contract is signed, regardless of what happens to the system after launch.
+- C) Treat monitoring as necessary only if a major incident actually occurs, since routine operation needs no architect-level attention.
+- D) Lifecycle management includes monitoring and iteration on production signal as part of the architect's ongoing responsibility, not just handoff.
 
 **Question 58.** Documentation for this claims system currently lists final configuration values (model tier, retry settings, thresholds) with no explanation of why each was chosen.
 
-- A) This level of documentation is sufficient since the "what" is all a future team needs.
-- B) Documentation should also capture the "why" behind key decisions — compliance drivers, tradeoff reasoning — so a future team can safely extend or modify the system without re-deriving that context.
-- C) Documenting reasoning is unnecessary overhead in a regulated environment.
-- D) Only the original architect should ever be allowed to modify the system, making documentation moot.
+- A) Treat this level of documentation as sufficient, since the structured "what" is all a future team needs.
+- B) Have documentation also capture the "why" behind key decisions — compliance drivers, tradeoff reasoning — not just the final values.
+- C) Treat documenting the reasoning behind decisions as unnecessary overhead in a regulated environment.
+- D) Restrict system modification to the original architect only, treating any future documentation effort as effectively moot once that restriction is in place.
 
 **Question 59.** The claims operations team wants Claude Code to help with routine tasks (drafting documentation, exploring an unfamiliar module) but is unsure where it actually saves meaningful time versus adding review overhead.
 
-- A) Evaluate specific task categories for genuine friction reduction (e.g., repetitive documentation drafting, codebase exploration) versus cases where review overhead may exceed time saved, rather than assuming a blanket benefit.
-- B) Assume AI-assisted tooling always saves time on every task category by default.
-- C) Ban Claude Code for all documentation tasks without evaluation.
-- D) Mandate Claude Code usage for all tasks regardless of measured benefit.
+- A) Evaluate specific task categories for genuine friction reduction versus cases where review overhead may exceed time saved.
+- B) Assume AI-assisted tooling always saves time on every task category, as a default without measurement.
+- C) Ban Claude Code for all documentation tasks outright, without evaluation, since output can't be validated well enough to trust unsupervised.
+- D) Mandate Claude Code usage for every task category, regardless of any measured benefit, since broad adoption is treated as valuable on its own.
 
 **Question 60.** A recurring operational issue is that different engineers debug similar Claude Code integration failures independently, each re-deriving the same integration-layer-versus-model-output triage process.
 
-- A) This is an acceptable ongoing inefficiency with no architectural fix.
-- B) Document the triage process (how to distinguish integration-layer failures from model-output failures for this system) as shared operational knowledge, reducing redundant re-derivation across the team.
-- C) Restrict debugging to a single designated engineer.
-- D) The issue can only be resolved by switching to a different tool entirely.
+- A) Treat this as an acceptable ongoing inefficiency, with no architectural fix considered even though the same triage steps repeat weekly.
+- B) Document the triage process (distinguishing integration-layer from model-output failures) as shared operational knowledge, reducing redundant re-derivation.
+- C) Restrict debugging responsibilities to a single designated engineer going forward, rather than sharing the triage knowledge across the team.
+- D) Treat this as resolvable only by switching to an entirely different tool, rather than addressing how failures are currently triaged.
 
 ---
 # Answer Key — Practice Exam 12
@@ -525,7 +525,7 @@ Cascade Mutual Insurance is modernizing its claims-intake and reserve-estimation
 
 **21. C** — Presenting both figures with attribution and a likely methodological explanation preserves the actual information for the buyer rather than resolving a real discrepancy arbitrarily. A, B, and D all discard or obscure a genuine data conflict.
 
-**22. A** — Schema-constrained tool-use output is enforced by the API mechanism, unlike prose requests that can still drift. B and C are workarounds for a structurally solvable problem; D doesn't address the preamble at all.
+**22. A** — Schema-constrained tool-use output is enforced by the API mechanism, unlike prose requests or sampling-parameter tweaks that can still drift. B and C are workarounds for a structurally solvable problem; D doesn't address the preamble at all.
 
 **23. C** — An MCP server matches the described need: reusable access across multiple different internal Claude-powered tools, maintained independently. A, B, and D all fail the reuse or maintainability requirement.
 
