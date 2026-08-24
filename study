@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Spin up the Claude certification study CLI in a container.
+#
+#   ./study                 -> Architect - Foundations, interactive menu
+#   ./study ccdvf           -> Developer - Foundations, interactive menu
+#   ./study ccafc exam short start short-practice-exam-3 --feedback immediate
+#
+# Uses docker or podman, whichever is installed. Override with STUDY_ENGINE=podman.
+# Builds the image on first run only; after that, startup is instant and offline.
+
+set -eo pipefail
+cd "$(dirname "$0")"
+
+IMAGE=claude-cert-study
+
+ENGINE="$STUDY_ENGINE"
+if [ -z "$ENGINE" ]; then
+  if command -v docker >/dev/null 2>&1; then
+    ENGINE=docker
+  elif command -v podman >/dev/null 2>&1; then
+    ENGINE=podman
+  else
+    echo "Neither docker nor podman found on PATH." >&2
+    echo "Install one, or set STUDY_ENGINE to the container command you use." >&2
+    exit 1
+  fi
+fi
+
+TRACK="${1:-ccafc}"
+case "$TRACK" in
+  ccafc|ccdvf|ccarp) [ $# -gt 0 ] && shift ;;
+  -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  *) echo "Unknown track '$TRACK'. Use ccafc, ccdvf, or ccarp." >&2; exit 1 ;;
+esac
+
+if ! "$ENGINE" image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "Building $IMAGE (first run only, a few minutes)..." >&2
+  "$ENGINE" build -f cli/Dockerfile -t "$IMAGE" .
+fi
+
+# Docker on Linux runs the container as root and would leave root-owned files
+# (generated data, saved progress) in your checkout. Rootless podman already
+# maps container root to your user, so it needs no help here.
+if [ "$ENGINE" = "docker" ] && [ "$(uname -s)" = "Linux" ]; then
+  exec "$ENGINE" run --rm -it \
+    --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v "$PWD:/app:z" -w /app \
+    --entrypoint "$TRACK" "$IMAGE" "$@"
+fi
+
+exec "$ENGINE" run --rm -it \
+  -v "$PWD:/app:z" -w /app \
+  --entrypoint "$TRACK" "$IMAGE" "$@"
