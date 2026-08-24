@@ -1,0 +1,10 @@
+.git
+.github
+**/node_modules
+**/.venv
+**/__pycache__
+cli/.state
+# Regenerated inside the image from the Markdown source, which stays authoritative.
+cli/data/generated
+web/dist
+web/public/data

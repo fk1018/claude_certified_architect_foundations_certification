@@ -30,13 +30,26 @@ Run commands from the repository root.
 ### Docker
 
 Docker is the lowest-friction option because it provides the required Python
-environment. With Docker and Docker Compose installed, launch the interactive
-menu for a track with:
+environment. Python and every dependency are installed into the image at build
+time, so after a one-time `build` each run starts immediately and needs no
+network. Podman works identically — substitute `podman` for `docker` below.
+
+With Docker (or Podman) installed, launch the interactive menu for a track with:
 
 ```bash
 docker compose run --rm ccafc   # Architect – Foundations
 docker compose run --rm ccdvf   # Developer – Foundations
 docker compose run --rm ccarp   # Architect – Professional
+```
+
+There is also a launcher that builds the image on first use and picks
+docker or podman automatically — `./study` on macOS and Linux, `.\study.ps1` on
+Windows:
+
+```bash
+./study                 # Architect – Foundations, interactive menu
+./study ccdvf           # Developer – Foundations
+./study ccafc exam short start short-practice-exam-3 --feedback immediate
 ```
 
 You can also append any CLI command directly:
@@ -76,6 +89,19 @@ cd web
 npm install
 npm run dev
 ```
+
+To run it without installing Node, build the bundled image instead — it generates
+all three tracks' data, builds the site, and serves it with nginx:
+
+```bash
+docker compose up web       # then open http://localhost:8080
+```
+
+The web content is baked into that image, so rebuild it (`docker compose up
+--build web`) after pulling new exams. Because the result is fully static, you can
+also extract `/usr/share/nginx/html` from the image and host it anywhere — set
+`--build-arg BASE_PATH=/subpath/` if it will not live at a domain root, and make
+sure the host falls back to `index.html` for unknown paths.
 
 ## Recommended study approach
 

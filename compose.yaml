@@ -1,22 +1,43 @@
+# One image, three entrypoints. Build once, run any track.
+#
+#   docker compose run --rm ccafc          podman compose run --rm ccafc
+#   docker compose run --rm ccdvf exam short list
+#
+# The repo is mounted at /app, so generated data and your saved progress stay in
+# your checkout. The Python environment lives at /opt/venv inside the image and
+# is never written to the mount.
+
 services:
   ccafc:
     build:
       context: .
       dockerfile: cli/Dockerfile
+    image: claude-cert-study
     working_dir: /app
     volumes:
-      - .:/app
+      # ":z" relabels the mount for SELinux (Fedora/RHEL + podman).
+      # Docker Desktop and non-SELinux hosts ignore it.
+      - .:/app:z
     stdin_open: true
     tty: true
-    environment:
-      TERM: xterm-256color
 
   ccdvf:
     extends:
       service: ccafc
-    entrypoint: ["uv", "run", "--project", "/app/cli", "ccdvf"]
+    entrypoint: ["ccdvf"]
 
   ccarp:
     extends:
       service: ccafc
-    entrypoint: ["uv", "run", "--project", "/app/cli", "ccarp"]
+    entrypoint: ["ccarp"]
+
+  # Static site: all three tracks, no backend, progress in browser localStorage.
+  # Content is baked into the image, so rebuild after pulling new exams:
+  #   docker compose up --build web
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    image: claude-cert-study-web
+    ports:
+      - "8080:80"
