@@ -35,128 +35,128 @@ You are building an internal fulfillment agent for Cascade Outfitters, a mid-siz
 
 **Question 1.** The fulfillment agent's tool-use loop must decide when to stop executing tools and hand control back to the human ops queue. What should drive that decision?
 
-- A) Whether the last tool result contains the word "complete."
-- B) A hard limit of five tool calls per order.
-- C) Whether the model's response text is longer than 200 tokens.
-- D) The `stop_reason` field: keep executing tools while it equals `"tool_use"`, and stop once it becomes `"end_turn"`.
+- A) Whether the last tool result contains a word like "complete" or "done".
+- B) A hard cap of five tool calls per order, since most orders resolve by then.
+- C) Whether the model's response text exceeds roughly 200 tokens in length.
+- D) The `stop_reason` field: continue while `"tool_use"`, stop at `"end_turn"`.
 
 **Question 2.** After `reserve_stock` runs and returns a result, what must the integration code do so the agent can reason correctly on the next turn?
 
-- A) Append a `tool_result` block referencing the `tool_use` id and send the full updated conversation back to the model.
-- B) Write the result to an order log and let the next user message summarize it.
-- C) Inject the result directly into the system prompt for the rest of the session.
-- D) Start a new conversation seeded with just the result.
+- A) Append a `tool_result` block referencing the matching `tool_use` id, then resend the conversation.
+- B) Write the result to an order log table and let the next user message summarize it back to the model.
+- C) Inject the result text directly into the system prompt for the rest of the session.
+- D) Start an entirely new conversation seeded with just the result, discarding prior turns.
 
 **Question 3.** Ops policy requires that `cancel_order` never be called on any order already marked "shipped." The system prompt states this clearly, but logs show occasional violations. What is the most reliable fix?
 
-- A) Repeat the rule at both the start and end of the system prompt.
-- B) Add few-shot examples of the agent correctly refusing to cancel shipped orders.
-- C) Lower the model's temperature so it follows the stated policy more consistently.
-- D) Implement a hook that intercepts `cancel_order` calls and blocks any targeting an order already marked shipped.
+- A) Repeat the cancellation rule at both the start and end of the system prompt, in a more structured format.
+- B) Add several few-shot examples of the agent refusing to cancel a shipped order.
+- C) Lower the model's temperature so it follows the stated policy more consistently, on the assumption this makes it deterministic.
+- D) Implement a hook that intercepts `cancel_order` and blocks any call on a shipped order.
 
 **Question 4.** The team wants the agent to always call a `classify_exception` tool first, with no exceptions, before any other tool runs.
 
 Question: What is the most reliable implementation? (Select ONE response.)
 
-- A) State in the system prompt that `classify_exception` must always run first.
-- B) Set `tool_choice: "any"` on the first request so a tool call is guaranteed.
-- C) Add several few-shot examples showing `classify_exception` called first.
-- D) Set `tool_choice: {"type": "tool", "name": "classify_exception"}` on the first request, then use normal tool choice afterward.
+- A) State plainly in the system prompt that `classify_exception` must always run first, before anything else.
+- B) Set `tool_choice: 'any'` on the first turn, which guarantees some tool call happens but not which one.
+- C) Add several few-shot examples, each one showing `classify_exception` called before any other tool in the transcript.
+- D) Set `tool_choice` to force `classify_exception` on the first request, then revert to normal.
 
 **Question 5.** The agent currently has 15 tools, including several rarely-used ones (marketing-email triggers, loyalty-points adjustments, warehouse-staffing lookups) unrelated to order-exception handling. Tool selection has become unreliable.
 
 Question: What is the single best fix? (Select ONE response.)
 
-- A) Remove or scope out the tools unrelated to the agent's core exception-handling role.
-- B) Keep all tools but add a system prompt note listing which tools are "primary."
+- A) Remove or scope out the tools unrelated to the agent's exception-handling role.
+- B) Keep all fifteen tools but add a prompt note listing which ones are "primary".
 - C) Increase `max_tokens` so the agent has more room to reason about which tool to pick.
-- D) Add several few-shot examples covering every tool so the agent recognizes each one.
+- D) Add few-shot examples covering all fifteen tools so each one gets recognized.
 
 **Question 6.** `check_inventory` currently returns the string `"Error"` for every possible failure — unknown SKU, warehouse system offline, or request timeout. The agent responds inconsistently to each. What is the best fix?
 
-- A) Wrap every call in an automatic retry policy.
-- B) Add a system prompt instruction telling the agent to infer the failure type from context.
-- C) Return structured error metadata: an error category, a retryable flag, and a human-readable description.
-- D) Increase the warehouse system's timeout so failures become rarer.
+- A) Wrap every `check_inventory` call in an automatic retry policy.
+- B) Add a prompt instruction telling the agent to infer the failure type from context.
+- C) Return structured error metadata: a category, a retryable flag, and a description.
+- D) Increase the warehouse system's timeout so failures become less frequent.
 
 **Question 7.** When `check_inventory` finds zero matching SKU rows, it currently returns an error. The agent responds by apologizing for "technical difficulties" and retrying the same query. What should change?
 
-- A) Add a hook that suppresses the error and ends the conversation.
+- A) Add a hook that suppresses the "no rows" error and quietly ends the conversation.
 - B) Have the agent call `reserve_stock` first to check whether inventory should exist.
-- C) Return a successful response with an empty result set, reserving errors for actual access failures.
-- D) Add a system prompt note explaining that this error usually means no SKU matched.
+- C) Return a successful response with an empty result set, not an error.
+- D) Add a prompt note explaining that this error usually means no SKU matched.
 
 **Question 8.** An engineer proposes replacing the agent's reasoning with a fixed sequence: always call `check_inventory`, then `reserve_stock`, then decide. They argue this makes behavior predictable.
 
 Question: Why is model-driven tool selection the better fit for order-exception handling? (Select ONE response.)
 
-- A) Model-driven selection is always cheaper since it skips unnecessary reasoning tokens.
-- B) The Claude Agent SDK technically cannot run fixed tool sequences.
-- C) Exceptions are high-ambiguity; the right tools and order vary by case and depend on intermediate results, which a fixed sequence can't adapt to.
-- D) Fixed sequences cannot invoke custom tools, only built-in ones.
+- A) Model-driven selection is always cheaper since it skips reasoning tokens.
+- B) The Claude Agent SDK technically cannot run a fixed sequence of tool calls.
+- C) Exceptions are high-ambiguity; the right tools and order vary and depend on intermediate results.
+- D) Fixed sequences can only invoke built-in tools, never custom ones.
 
 **Question 9.** The team wants to add an `escalate_to_ops` capability but is deciding whether to give the main fulfillment agent that tool directly or delegate escalation decisions to a separate, narrowly-scoped subagent. Escalating pulls a human ops specialist off other work and should only happen under specific criteria.
 
 Question: What is the strongest argument for a separate, narrowly-scoped subagent? (Select ONE response.)
 
-- A) Subagents are required any time a tool has real-world side effects.
-- B) A narrowly-scoped subagent can be given only the escalation tool and explicit escalation criteria, reducing the chance the main agent escalates unnecessarily while reasoning about unrelated tools.
-- C) The main agent's context window is too small to hold the escalation tool's schema.
-- D) Subagents execute faster than tools called directly by the main agent.
+- A) Subagents are required by policy whenever a tool call could have a hard-to-reverse effect on a customer order.
+- B) A narrowly-scoped subagent given only the escalation tool reduces the chance of unnecessary escalation.
+- C) The main agent's context window is too small to hold the escalation tool's full schema.
+- D) Subagents execute measurably faster than a tool called directly by the main agent itself.
 
 **Question 10.** During a complex multi-warehouse exception, the agent's context fills with verbose raw inventory dumps, leaving little room for reasoning about the actual root cause.
 
 Question: What is the best structural fix? (Select ONE response.)
 
-- A) Increase `max_tokens` so responses can be longer.
-- B) Read only the first 50 rows of every inventory query result.
-- C) Disable inventory checks and rely on order metadata alone.
-- D) Delegate inventory exploration to a subagent that returns a distilled summary of relevant findings, keeping the main agent's context focused on diagnosis.
+- A) Increase `max_tokens` so the final response can be longer without changing what enters context.
+- B) Read only the first 50 rows of every inventory query result, regardless of which warehouse.
+- C) Disable inventory checks for this exception type and rely solely on the order metadata recorded at order time.
+- D) Delegate exploration to a subagent that returns a distilled summary of findings.
 
 **Question 11.** The agent escalates a fraud-hold case, but the human ops specialist has no visibility into what the agent tried before escalating — logs show 20 minutes of tool calls with no accessible summary.
 
 Question: What should the escalation to a human include? (Select ONE response.)
 
-- A) A structured handoff summary: what was tried, what was found, and a recommended next action.
-- B) The full raw transcript of every tool call and result.
+- A) A structured summary: what was tried, what was found, and a recommended action.
+- B) The full raw transcript of every tool call and result from the session.
 - C) Just the final error message, since the human can re-investigate from there.
-- D) A sentiment analysis of how urgent the case seemed.
+- D) A sentiment score of how urgent the case seemed from the wording.
 
 **Question 12.** The team is deciding between letting engineers run the agent via a hosted, Anthropic-managed execution environment versus self-hosting the harness on their own infrastructure.
 
 Question: What is the core tradeoff? (Select ONE response.)
 
-- A) Self-hosted agents cannot use custom tools.
-- B) Managed agents are always less secure than self-hosted ones.
-- C) Operational control (self-hosted) versus operational burden (managed) — there is no capability difference in what tools the agent can call.
-- D) Managed agents cannot access private infrastructure at all.
+- A) Self-hosted agents cannot call custom tools without a separate licensing agreement in place.
+- B) Managed agents are always less secure than a self-hosted harness on internal infrastructure.
+- C) Operational control (self-hosted) versus operational burden (managed) — no capability difference.
+- D) Managed agents cannot reach private infrastructure at all, even through an authenticated tunnel or proxy.
 
 **Question 13.** An engineer asks whether order-exception handling should be built as a fixed workflow or an agent.
 
 Question: What is the deciding factor? (Select ONE response.)
 
-- A) Whether the task is well-defined and repeatable versus high-ambiguity with a path that depends on intermediate findings.
-- B) Whether the task involves more than three tools.
-- C) Whether the team prefers Python or TypeScript.
-- D) Whether the task needs to run in under 30 seconds.
+- A) Whether the task is well-defined and repeatable versus dependent on intermediate findings.
+- B) Whether the task involves calling more than three distinct tools during a typical run.
+- C) Whether the engineering team's style guide happens to prefer Python over TypeScript for this kind of integration.
+- D) Whether the task needs to finish executing in under thirty seconds end to end.
 
 **Question 14.** The `AgentDefinition` for a proposed "inventory-analysis subagent" has a vague description: "Helps with inventory." The main agent rarely delegates to it even when inventory analysis is clearly needed.
 
 Question: What is the most likely cause and fix? (Select ONE response.)
 
-- A) The subagent needs more tools; add several more inventory-related tools to its definition.
-- B) Subagents cannot be delegated to unless they are registered in `.mcp.json`.
-- C) The description drives delegation choices; rewriting it to state specifically what the subagent does and when to use it will most directly fix under-delegation.
-- D) The main agent's temperature is too low to consider delegating.
+- A) The subagent needs more tools; add several more inventory-related ones to its definition.
+- B) Subagents cannot be delegated to unless registered in `.mcp.json` first.
+- C) The description drives delegation; rewriting it to state specifically what and when to use it fixes this.
+- D) The main agent's temperature is too low for it to consider delegating.
 
 **Question 15.** The team wants a hard guarantee that `cancel_order` is never called more than once for the same order within one session, regardless of what the model decides mid-conversation.
 
 Question: What is the correct enforcement mechanism? (Select ONE response.)
 
-- A) A system prompt instruction stating the one-call limit clearly.
-- B) A note in the tool's description mentioning the limit.
-- C) Few-shot examples showing an agent stopping after one cancellation.
-- D) A hook that tracks per-order call counts and blocks the tool call once the limit is reached.
+- A) A system prompt instruction stating the one-call-per-order limit clearly at the very top of the prompt.
+- B) A note in the tool's own description mentioning that this particular limit exists.
+- C) Few-shot examples showing an agent stopping itself after issuing one cancellation.
+- D) A hook that tracks per-order call counts and blocks the call once the limit is reached.
 
 ---
 
@@ -170,136 +170,136 @@ You maintain Fenwick Analytics, a SaaS platform that routes Claude requests thro
 
 Question: Which API best fits, and why? (Select ONE response.)
 
-- A) The synchronous Messages API run in parallel across many threads, to finish as fast as possible.
-- B) The Message Batches API — latency-tolerant, non-blocking, high-volume work at reduced cost.
-- C) The synchronous Messages API with a smaller model to reduce cost.
-- D) The synchronous Messages API with `max_tokens` reduced to the minimum.
+- A) The synchronous Messages API, run in parallel across many worker threads, to finish as fast as possible.
+- B) The Message Batches API — latency-tolerant, high-volume work at reduced cost.
+- C) The synchronous Messages API paired with a smaller model chosen specifically to cut cost.
+- D) The synchronous Messages API with `max_tokens` reduced to the bare minimum needed.
 
 **Question 17.** An engineer wants to add an iterative "classify, validate against taxonomy, retry mismatches" loop to the batch pipeline to improve accuracy, and proposes running the whole loop through the Batch API for its cost savings.
 
 Question: Why won't this work as designed? (Select ONE response.)
 
-- A) The Batch API doesn't support system prompts.
-- B) The 24-hour window makes any retry logic impossible.
-- C) The Batch API cannot execute a validation tool call mid-request and feed results back to the model within a single request — required for this iterative loop.
-- D) The Batch API's context window is too small for ticket-length threads.
+- A) The Batch API doesn't support a system prompt for this kind of classification request.
+- B) The 24-hour completion window makes it impossible to validate and retry mismatches before the batch closes.
+- C) The Batch API can't execute a tool call mid-request and feed results back within one request.
+- D) The Batch API's context window is too small to hold ticket-length conversation threads.
 
 **Question 18.** The interactive dashboard shows a real-time progress indicator while Claude classifies an incoming ticket.
 
 Question: What technique best supports this user experience? (Select ONE response.)
 
-- A) Streaming, so the UI can render output incrementally and reduce perceived latency.
-- B) The Batch API, since it's designed for real-time feedback.
-- C) Increasing `max_tokens` so the full response arrives faster.
-- D) Polling the Batch API status endpoint every second.
+- A) Streaming, so the UI can render output incrementally, reducing perceived latency.
+- B) The Batch API, since it's purpose-built for real-time, per-ticket feedback to a live dashboard.
+- C) Increasing `max_tokens` so the full response arrives sooner overall.
+- D) Polling the Batch API's status endpoint once per second until it completes.
 
 **Question 19.** Every request sends the same 5,000-token classification taxonomy, followed by the specific ticket text, which varies per request.
 
 Question: What optimization most directly reduces both latency and cost across many requests? (Select ONE response.)
 
-- A) Move the taxonomy into a few-shot example block instead.
-- B) Switch to the smallest available model regardless of classification quality.
-- C) Truncate the taxonomy to save tokens.
-- D) Place the stable taxonomy first, enable prompt caching, and put the varying ticket text last.
+- A) Move the taxonomy into a few-shot example block instead of a plain instruction.
+- B) Switch to the smallest available model, regardless of classification quality.
+- C) Truncate the taxonomy down to the most commonly used categories to save tokens.
+- D) Place the stable taxonomy first, enable prompt caching to increase cache hits, and put ticket text last.
 
 **Question 20.** The classification schema currently requires an `urgency_reason` field on every ticket. Many tickets have no clear urgency driver, and the model has started inventing plausible-sounding reasons rather than reporting none.
 
 Question: What schema change fixes this? (Select ONE response.)
 
-- A) Remove the field from the schema entirely.
-- B) Make `urgency_reason` nullable so its absence can be reported truthfully.
-- C) Add a prompt instruction telling the model not to invent values.
-- D) Lower the temperature to reduce invented values.
+- A) Remove the `urgency_reason` field from the schema entirely, dropping the concept.
+- B) Make `urgency_reason` nullable so a genuine absence can be reported truthfully.
+- C) Add a prompt instruction telling the model not to invent a value, instead of changing the schema.
+- D) Lower the temperature for this specific field's generation step to reduce invented values.
 
 **Question 21.** Two credible classification passes on the same ticket disagree on the assigned category, and there's no way to tell which is correct from context alone.
 
 Question: What should the pipeline do? (Select ONE response.)
 
-- A) Average the two categorical outputs.
-- B) Discard the ticket entirely since the data is unreliable.
-- C) Flag the field for human review with both candidate values and their source rather than silently picking one.
-- D) Always trust the first classification pass.
+- A) Average the two categorical outputs into a single blended label.
+- B) Discard the ticket entirely, since disagreement implies unreliable data.
+- C) Flag the field for human review with both candidates and their source.
+- D) Always trust whichever classification pass ran first.
 
 **Question 22.** The classification tool's JSON output occasionally fails to parse — about 3% of runs produce malformed JSON that crashes the downstream loader.
 
 Question: What is the most reliable fix? (Select ONE response.)
 
-- A) Define a `submit_classification` tool whose input schema matches the classification structure, and read the data from the structured `tool_use` block instead of parsing free text.
-- B) Wrap the parse in a try/catch and retry with "valid JSON only" appended to the prompt.
-- C) Add a JSON-repair library to fix common syntax issues before parsing.
-- D) Ask for YAML output instead, since it's more forgiving of formatting drift.
+- A) Define a `submit_classification` tool with a matching input schema and read the `tool_use` block.
+- B) Wrap the parse in a try/catch and retry with 'valid JSON only' appended to the prompt.
+- C) Add a JSON-repair library to the pipeline to fix common syntax issues before parsing.
+- D) Ask for YAML output instead of JSON, since YAML is generally more forgiving of formatting drift between runs.
 
 **Question 23.** Since switching to strict schema-constrained tool use, classification output always parses successfully, but some extracted line-item totals don't sum to the stated ticket-refund amount.
 
 Question: What should you conclude and do? (Select ONE response.)
 
-- A) The schema needs stricter numeric types to fix this.
-- B) `max_tokens` is too low, truncating output mid-generation.
-- C) Strict schemas eliminate syntax errors, not semantic errors — add a validation step that checks totals against line-item sums on top of schema compliance.
-- D) Abandon tool use and return to free-text extraction with human review.
+- A) The schema needs stricter numeric types on the total and subtotal fields to fix this.
+- B) `max_tokens` is set too low, silently truncating output partway through generation.
+- C) Strict schemas eliminate syntax errors, not semantic ones — add a totals-validation step.
+- D) Abandon tool use entirely and return to free-text extraction with a human reviewing every refund ticket.
 
 **Question 24.** A subset of incoming tickets include scanned receipt images with no text layer. The pipeline currently sends only OCR-extracted text to Claude, and quality is poor on receipts with damaged OCR output.
 
 Question: What is the most direct fix? (Select ONE response.)
 
-- A) Reject tickets with scanned receipts from the pipeline entirely.
-- B) Increase `max_tokens` so the model can work harder on the degraded OCR text.
-- C) Send the receipt image itself as a content block alongside the classification instructions, using Claude's native vision input instead of relying solely on OCR text.
-- D) Switch to a larger model, since bigger models are always better at reading noisy text.
+- A) Reject any ticket with a scanned receipt from the pipeline entirely.
+- B) Increase `max_tokens` so the model works harder on the degraded OCR text.
+- C) Send the receipt image itself as a content block, using native vision input.
+- D) Switch to a larger model, since bigger models read noisy text better.
 
 **Question 25.** The pipeline needs to classify five ticket batches concurrently to keep latency reasonable, rather than processing batches one at a time.
 
 Question: What must the integration layer support to do this? (Select ONE response.)
 
-- A) Streaming, since only streaming supports concurrency.
-- B) Async/concurrent request handling, so multiple API calls can be in flight at once without blocking on each other.
+- A) Streaming, since only a streamed response supports handling more than one batch.
+- B) Async/concurrent request handling, so multiple calls can be in flight at once.
 - C) The Batch API, since it's the only way to run more than one request at a time.
-- D) A single request with all five batches concatenated, since Claude parallelizes internally.
+- D) A single request with all five batches concatenated together.
 
 **Question 26.** The team runs the same classification pipeline through the direct Anthropic API, Amazon Bedrock, and Google Vertex AI for different enterprise customers' data-residency needs.
 
 Question: What should the team expect? (Select ONE response.)
 
-- A) Extraction accuracy is guaranteed to be identical to the millisecond in latency across vendors.
-- B) The Messages API contract stays conceptually the same across vendors, though auth/plumbing and feature-rollout timing can differ.
-- C) Batch processing is unavailable on all third-party vendor integrations.
-- D) Bedrock and Vertex each require a completely different prompting approach and schema design.
+- A) Extraction accuracy and latency are guaranteed identical across all three vendors.
+- B) The Messages API contract stays conceptually the same, though plumbing can differ.
+- C) Batch processing is unavailable across every third-party vendor integration.
+- D) Bedrock and Vertex each require a completely different prompting approach and schema.
 
 **Question 27.** The team enables extended thinking on a complex multi-step classification-and-escalation task that uses tool calls across several turns.
 
 Question: What must the integration layer do correctly? (Select ONE response.)
 
-- A) Ignore thinking content entirely, since it never affects downstream turns.
-- B) Handle the thinking content block as distinct from the final answer text, typically preserving it appropriately across the multi-turn tool-use conversation.
-- C) Convert thinking output into a separate tool call.
-- D) Discard thinking content only when tools are involved.
+- A) Ignore thinking content entirely, since it's assumed to never influence anything in the later turns of the conversation.
+- B) Handle the thinking block as distinct from the final text, typically preserving it across turns.
+- C) Convert the model's thinking output into a separate synthetic tool call for the harness to inspect.
+- D) Discard thinking content only in the specific turns where a tool is also involved.
 
 **Question 28.** Finance asks for an accurate per-ticket cost breakdown for the classification pipeline, but the current cost model only estimates based on average prompt length.
 
 Question: What should the improved cost model account for separately? (Select ONE response.)
 
-- A) Only cache read tokens, since caching is the dominant cost driver.
-- B) Only output tokens, since input is effectively free.
-- C) Input tokens, output tokens, and cache read/write tokens, since each is priced differently.
-- D) A flat per-ticket fee regardless of token usage.
+- A) Only cache read tokens, since caching is assumed by finance to be the dominant cost driver overall.
+- B) Only output tokens, on the assumption that input tokens are effectively free.
+- C) Input, output, and cache read/write tokens separately, since each is priced differently.
+- D) A flat per-ticket fee regardless of how many tokens a ticket used.
 
 **Question 29.** A new engineer argues that once Claude is integrated, the team can skip code review on the classification pipeline's application code since "the AI part is the risky part."
 
 Question: What is the correct response? (Select ONE response.)
 
-- A) Standard SDLC practices — code review, testing, version control — still apply to the application code around Claude; integrating an LLM doesn't replace engineering discipline.
-- B) Review should be skipped for any code that calls an external API.
+- A) Standard SDLC practices — review, testing, version control — still apply to the surrounding code.
+- B) Review should be skipped for code whose only job is calling an external API and returning a structured response.
 - C) Only the prompt needs review; the surrounding code is low-risk by definition.
-- D) Code review is unnecessary once evals pass.
+- D) Code review becomes unnecessary once the evals are passing consistently.
 
 **Question 30.** A single long-running session is used across an entire day to process unrelated ticket batches from different enterprise customers, and the team notices Claude increasingly referencing details from unrelated earlier customers.
 
 Question: What is the best fix? (Select ONE response.)
 
-- A) Reduce temperature to prevent cross-referencing.
-- B) Increase the context window so more history fits without confusion.
-- C) Start a fresh session (or `/compact`) at natural task boundaries, such as between different customers' batches, rather than accumulating unrelated context in one long session.
-- D) Ask the model to "ignore earlier customers" at the start of each new batch.
+- A) Reduce temperature across the board to prevent the model from cross-referencing unrelated customers.
+- B) Increase the context window so more history fits in without causing confusion between customers.
+- C) Start a fresh session (or `/compact`) at natural boundaries, such as between customers' batches.
+- D) Ask the model to 'ignore earlier customers' at the very start of every new batch, restated each time.
 
 ---
 
@@ -313,136 +313,136 @@ You run Solstice Support, a customer-support software vendor whose triage servic
 
 Question: Which model tier best fits the default path? (Select ONE response.)
 
-- A) The highest-capability tier available, to guarantee quality on every ticket.
-- B) Whichever tier is cheapest per token regardless of task fit.
+- A) The highest-capability tier for every ticket, in order to guarantee quality even on the rare hard case.
+- B) Whichever tier happens to be cheapest per token, regardless of task fit.
 - C) The same tier used for the company's hardest reasoning tasks, for consistency.
-- D) A fast, low-latency tier suited to high-volume/low-complexity tasks, reserving a higher tier only for tickets flagged as complex.
+- D) A fast, low-latency tier for high-volume work, reserving a higher tier for flagged tickets.
 
 **Question 32.** A small fraction of tickets require multi-step reasoning (tracing a multi-account billing dispute) where the fast default model produces shallow triage notes.
 
 Question: What is the most targeted fix? (Select ONE response.)
 
 - A) Add more few-shot examples to the fast model's prompt for every ticket.
-- B) Switch every ticket to the highest-capability tier to be safe.
-- C) Increase `max_tokens` for all tickets.
-- D) Route only the flagged complex tickets to a higher-capability tier or one with extended/adaptive thinking enabled, keeping the fast path for everything else.
+- B) Switch every ticket in the queue to the highest-capability tier, just to be safe.
+- C) Increase `max_tokens` across the board for all tickets, complex or not.
+- D) Route only the flagged complex tickets to a higher tier, or one with extended thinking, as ticket complexity increases.
 
 **Question 33.** The service currently floats to "whatever model is latest" in production. After a routine model update, triage categories and tone shifted noticeably without any code change.
 
 Question: What should the team do differently? (Select ONE response.)
 
-- A) Nothing — behavior drift across releases is expected and requires no process.
-- B) Roll back to the oldest available model version permanently.
-- C) Pin a specific model version in production and deliberately test before upgrading, rather than always floating to latest.
-- D) Disable all prompt caching to prevent drift.
+- A) Nothing — behavior drift across model releases is expected and needs no process.
+- B) Roll back permanently to the oldest available model version the vendor still supports, to avoid drift.
+- C) Pin a specific model version and deliberately test parameter changes, including temperature, before upgrading.
+- D) Disable all prompt caching, on the theory that caching is causing the drift.
 
 **Question 34.** Triage notes need a consistent structure (category, priority, suggested queue) but detailed prose instructions describing the structure haven't produced consistent output.
 
 Question: What technique is most likely to help? (Select ONE response.)
 
-- A) Write an even longer, more detailed prose description of the structure.
-- B) Provide 2–3 few-shot examples demonstrating the exact desired structure.
-- C) Lower the temperature to zero.
-- D) Ask the model to restate the structure before triaging.
+- A) Write an even longer, more detailed prose description of the desired structure.
+- B) Provide 2-3 few-shot examples demonstrating the exact structure directly.
+- C) Lower the temperature to zero, on the assumption that this makes output fully deterministic.
+- D) Ask the model to restate the structure before triaging each ticket.
 
 **Question 35.** A ticket thread is very long (50+ messages). The team wants maximally detailed triage notes and considers requesting a very long output to match.
 
 Question: What tradeoff must they account for? (Select ONE response.)
 
-- A) None — input and output tokens are budgeted completely independently.
-- B) Output length has no effect on latency.
-- C) Input and output share the same context-window budget, so a very long input leaves less room for a long output, and vice versa.
-- D) Long outputs are always truncated regardless of context window size.
+- A) None — input and output tokens are budgeted from two completely independent token pools.
+- B) Output length has no measurable effect on response latency in this pipeline at all.
+- C) Input and output share one context-window budget, so a long input leaves less room for output.
+- D) Long outputs are always truncated once they exceed a fixed length, no matter the size of the context window.
 
 **Question 36.** The triage prompt currently places the specific ticket text before the general triage instructions and desired format in every request.
 
 Question: Why might reordering improve both consistency and cacheability? (Select ONE response.)
 
-- A) Order has no effect on either consistency or caching.
-- B) Stable, role-defining instructions belong in the system prompt or placed first so they form a consistent, cacheable prefix; ticket-specific content should come after as the varying part.
-- C) Placing instructions last always improves model attention.
-- D) Reordering only affects cost, never consistency.
+- A) Order has no measurable effect on either consistency or caching in practice.
+- B) Stable, role-defining instructions belong in the system prompt or first position, forming a cacheable prefix.
+- C) Placing the instructions last in the prompt always improves the model's attention.
+- D) Reordering only ever affects cost, never the consistency of the model's output.
 
 **Question 37.** Finance wants to know exactly how much the triage service costs per ticket, but the team currently estimates cost only from average prompt length.
 
 Question: What should be instrumented instead? (Select ONE response.)
 
-- A) Wall-clock latency per ticket, used as a cost proxy.
-- B) Actual token usage per request — input, output, and cache — attributed per ticket, rather than an estimate from average length.
-- C) Number of API calls only, regardless of token count.
-- D) A flat cost assumption based on ticket character count.
+- A) Wall-clock latency per ticket, used as a stand-in proxy for cost, since slower tickets are assumed pricier.
+- B) Actual token usage per request — input, output, and cache — attributed per ticket.
+- C) The raw number of API calls made, tallied per day, regardless of how many tokens each one used.
+- D) A flat cost assumption derived from the ticket's character count alone, ignoring token usage.
 
 **Question 38.** An engineer writes an automated eval that asserts the triage output must exactly match a fixed reference string for a sample ticket, and the eval fails intermittently even though the notes look correct on manual review.
 
 Question: What is the most likely issue with the eval design? (Select ONE response.)
 
-- A) The model is broken and producing wrong answers.
-- B) LLM output is non-deterministic across calls; exact-string-match evals are the wrong tool — evals should tolerate reasonable variation (e.g., checking for required content/structure) rather than asserting exact text.
-- C) The eval needs a larger reference string.
-- D) Temperature should be increased to fix the intermittent failures.
+- A) The model is simply broken and producing wrong answers on this sample ticket.
+- B) LLM output is non-deterministic across calls; exact-string-match evals are the wrong tool here.
+- C) The eval just needs a longer, more detailed reference string to compare against.
+- D) Temperature should be increased specifically to fix the intermittent failures.
 
 **Question 39.** Ticket payloads include full raw metadata dumps (every field of every message) that bloat the prompt with mostly-irrelevant data, slowing the pipeline and increasing cost.
 
 Question: What is the best fix? (Select ONE response.)
 
-- A) Prune tool/data output to the relevant fields before they enter the prompt, rather than passing raw dumps.
-- B) Increase `max_tokens` to accommodate the extra data.
-- C) Switch to a model with a larger context window so the bloat matters less.
-- D) Summarize the metadata with a second Claude call before triaging.
+- A) Prune tool/data output to the relevant fields before it enters the prompt.
+- B) Increase `max_tokens` to accommodate the extra metadata volume in every request.
+- C) Switch to a model with a much larger context window so the bloat matters less, regardless of the metadata's schema.
+- D) Summarize the metadata with a separate Claude call before triaging each ticket.
 
 **Question 40.** For very long ticket threads, the team notices triage notes consistently miss details from the middle of the conversation while capturing the opening and closing messages well.
 
 Question: What is the most effective mitigation? (Select ONE response.)
 
-- A) Switch to a model with an even larger context window.
+- A) Switch to a model with an even larger context window to fix mid-thread attention.
 - B) Add an instruction telling the model to "pay equal attention to the whole conversation."
-- C) Alphabetize the messages before triaging.
-- D) Put a brief overview or key-facts summary at the start of the input and organize the detailed content under clear section headers, mitigating the tendency to attend most to the beginning and end of long inputs.
+- C) Alphabetize the messages in the thread before triaging, so ticket review order is predictable.
+- D) Put a key-facts summary at the start and organize detail under clear section headers.
 
 **Question 41.** A triage note confidently states a resolution that, on manual review, never actually happened in the ticket thread.
 
 Question: What practice would most help catch this class of error before it reaches the dashboard? (Select ONE response.)
 
-- A) Trust confident, fluent-sounding output as evidence of correctness by default.
-- B) Increase the model's temperature so answers sound less confident.
-- C) Shorten the note so there's less room for errors.
-- D) Apply defensive parsing and skepticism toward confident output — verify key claims (e.g., "resolution" fields) against the source thread rather than accepting fluency as correctness.
+- A) Trust confident, fluent-sounding output as sufficient evidence of correctness by default, without further checks.
+- B) Increase the model's temperature so its answers come across as sounding less confident.
+- C) Shorten the note so there's simply less room left for an error to appear in it.
+- D) Verify key claims like a stated "resolution" against the source thread rather than trusting fluency, regardless of temperature.
 
 **Question 42.** Detailed prose asking the model to "always output valid structured JSON with these exact fields" still produces occasional free-text preambles before the JSON.
 
 Question: What is the more reliable approach? (Select ONE response.)
 
-- A) Repeat the JSON instruction more emphatically.
-- B) Use tool-use/schema-constrained output so the structure is enforced by the API mechanism rather than requested through prose.
-- C) Post-process every response to strip text before the first `{`.
-- D) Increase `max_tokens` so there's room for both the preamble and the JSON.
+- A) Repeat the JSON-formatting instruction even more emphatically in the prompt.
+- B) Use tool-use/schema-constrained output so structure is enforced by the API mechanism.
+- C) Post-process every response to strip text appearing before the first `{`.
+- D) Increase `max_tokens` so there's guaranteed room for both the free-text preamble and the full JSON payload.
 
 **Question 43.** The team wants to add an exploratory step that scans a customer account's full ticket history for context before triaging the current ticket, but worries the exploration will bloat the main context with mostly-irrelevant historical detail.
 
 Question: What is the best structural approach? (Select ONE response.)
 
-- A) Load the entire ticket history directly into the main prompt every time.
-- B) Have a subagent perform the historical scan in an isolated context and return only a distilled, relevant summary to the main triage step.
-- C) Skip historical context entirely to avoid the bloat risk.
-- D) Increase the context window so the full history always fits.
+- A) Load the entire ticket history directly into the main prompt on every single triage request, regardless of relevance.
+- B) Have a subagent scan the history in an isolated context and return a distilled summary.
+- C) Skip historical context entirely, accepting the accuracy cost in order to avoid the bloat risk.
+- D) Increase the context window so the full history always fits without any summarization step.
 
 **Question 44.** For the simplest, most common ticket type (password reset requests), the team is deciding between a zero-shot prompt and a multi-shot prompt with several examples.
 
 Question: What consideration should drive the choice? (Select ONE response.)
 
-- A) Multi-shot is always strictly better regardless of task simplicity.
-- B) Zero-shot is required whenever latency matters at all.
-- C) The choice has no effect on cost or latency.
-- D) For a simple, well-understood, high-volume task, zero-shot may be sufficient and cheaper; multi-shot earns its extra token cost on tasks needing specific formatting or edge-case consistency.
+- A) Multi-shot is always strictly better than zero-shot, regardless of task simplicity.
+- B) Zero-shot is required by policy whenever latency matters at all, regardless of task.
+- C) The choice between zero-shot and multi-shot has no measurable effect on cost or latency.
+- D) For a simple, high-volume task, zero-shot may suffice; multi-shot earns its cost on format-sensitive tasks.
 
 **Question 45.** The triage prompt has been modified informally by several engineers over time with no record of what changed or why, making it hard to diagnose a recent quality regression.
 
 Question: What practice would have prevented this? (Select ONE response.)
 
-- A) Locking the prompt so no one can ever change it again.
-- B) Treating prompts as versioned artifacts, similar to code, so changes are tracked and regressions can be attributed and rolled back.
-- C) Only allowing one designated engineer to ever read the prompt.
-- D) Rewriting the prompt from scratch every quarter.
+- A) Lock the prompt entirely so that no one on the team is ever able to change it again.
+- B) Treat prompts as versioned artifacts, similar to code, so changes are tracked and attributable.
+- C) Only allow one single designated engineer on the team to ever read the prompt going forward.
+- D) Rewrite the prompt completely from scratch every quarter, discarding whatever changes and schema notes accumulated before then.
 
 ---
 
@@ -456,89 +456,89 @@ You support Trailmark Mobile's iOS and Android engineering team's use of Claude 
 
 Question: What is the most likely cause? (Select ONE response.)
 
-- A) The new engineer needs to run `/memory` to activate memory files.
+- A) The new engineer simply needs to run `/memory` once to activate memory files.
 - B) CLAUDE.md requires an explicit `@import` from the project root to take effect at all.
-- C) The conventions file exceeded a size limit and was silently truncated.
-- D) The conventions live only in `~/.claude/CLAUDE.md` on the teammate's machine — user-level config that never travels through version control.
+- C) The conventions file exceeded a size limit and was silently truncated during load.
+- D) The conventions live only in `~/.claude/CLAUDE.md` on the teammate's machine.
 
 **Question 47.** A nightly CI job invokes Claude Code to review mobile pull requests and consistently hangs until timeout, with no visible error in the logs.
 
 Question: What is the most likely cause? (Select ONE response.)
 
-- A) The job is missing `-p`/`--print` (headless mode), so the process is waiting for interactive input the CI runner never provides.
-- B) The pull requests are too large for Claude Code to process.
-- C) The CI runner lacks permission to call the Claude API.
-- D) The repository's CLAUDE.md is malformed.
+- A) The job is missing `-p`/`--print` (headless mode), so the process waits for input CI never provides.
+- B) The pull requests being reviewed are simply too large for Claude Code to process.
+- C) The CI runner lacks permission to call the Claude API for this specific repository.
+- D) The repository's CLAUDE.md file is malformed and failing to parse correctly on load.
 
 **Question 48.** A downstream service parses Claude Code's PR review output with regex to post inline comments, and the parser breaks whenever output formatting drifts slightly between runs.
 
 Question: What is the robust fix? (Select ONE response.)
 
-- A) Run with `--output-format json` and a `--json-schema` defining the findings structure for machine-parseable output.
-- B) Harden the regex with more permissive fallback patterns.
-- C) Post the entire raw output as a single PR comment instead of parsing it.
-- D) Add a stronger prompt instruction never to deviate from the format.
+- A) Run with `--output-format json` and a `--json-schema` for machine-parseable output.
+- B) Harden the regex with more permissive fallback patterns for the drift.
+- C) Post the entire raw output as a single PR comment, skipping schema validation entirely and giving up on inline comments.
+- D) Add a stronger prompt instruction telling the model never to deviate from format.
 
 **Question 49.** The team's `/audit-native-deps` custom command prints thousands of lines of dependency-graph data, and developers report that Claude's answers about their actual task get noticeably worse right after running it.
 
 Question: What frontmatter change fixes this? (Select ONE response.)
 
-- A) `context: fork`, so the command's verbose output runs in an isolated sub-agent context and only a summary returns to the main conversation.
-- B) `allowed-tools`, restricting the command to read-only operations.
-- C) `argument-hint`, so developers scope the analysis more narrowly.
-- D) Removing the command entirely.
+- A) `context: fork`, so the command's output runs in an isolated sub-agent context.
+- B) `allowed-tools`, restricting the command to read-only operations on the dependency graph it inspects.
+- C) `argument-hint`, so developers scope the dependency analysis more narrowly.
+- D) Removing the command entirely, since no team member can use it safely.
 
 **Question 50.** An internal `/scaffold-screen` skill is meant only to create new files from a template, but an audit finds a session where it also ran shell commands that modified unrelated files.
 
 Question: What is the correct guardrail? (Select ONE response.)
 
-- A) Configure `allowed-tools` in the skill's frontmatter to permit only file-creation operations, making Bash unavailable during execution.
-- B) Add a warning in the skill's instructions telling Claude never to run shell commands.
-- C) Require developers to commit their work before running any skill.
-- D) Convert the skill into a slash command, since commands cannot run tools.
+- A) Configure `allowed-tools` in the skill's frontmatter to permit only file-creation operations.
+- B) Add a warning in the instructions telling Claude never to run shell commands, without any hook enforcing it.
+- C) Require developers to commit their work first, before running any skill, as a safety net.
+- D) Convert the skill into a slash command instead, since commands are documented as unable to run shell tools.
 
 **Question 51.** An engineer needs to understand how push-notification handling flows across a large, unfamiliar mobile codebase before making a change, and worries that reading dozens of files will exhaust context before implementation begins.
 
 Question: What is the best approach? (Select ONE response.)
 
-- A) Read every file in the codebase in one pass to be thorough.
-- B) Skip exploration and infer the architecture from directory names.
-- C) Use the Explore subagent for the discovery phase so verbose exploration happens in an isolated context and only a summary returns to the main conversation.
-- D) Split the work across two separate terminal windows.
+- A) Read every file in the codebase in one long pass, to be as thorough as possible.
+- B) Skip exploration entirely and infer the architecture from directory names.
+- C) Use the Explore subagent for discovery so verbose output stays isolated from the main conversation.
+- D) Split the investigation across two separate terminal windows running at the same time.
 
 **Question 52.** Mid-session, context is nearly full of verbose discovery output about the crash-reporting integration, but the engineer still needs to implement the change in the same session and wants to preserve key findings.
 
 Question: What should they do? (Select ONE response.)
 
-- A) Start a brand-new session and rely on memory of what was learned.
-- B) Run `/compact` to summarize the conversation and reduce context usage while preserving key information.
-- C) Delete the project CLAUDE.md temporarily to free context space.
-- D) Continue working; Claude automatically discards irrelevant context.
+- A) Start a brand-new session and rely on memory of what was learned earlier.
+- B) Run `/compact` to summarize the conversation while preserving key information.
+- C) Delete the project's CLAUDE.md file temporarily to free up context space.
+- D) Keep working as-is; Claude automatically discards irrelevant context on its own.
 
 **Question 53.** A multi-step Claude Code task that reads a build-config file, calls an internal MCP tool for crash data, and writes a triage report produces a wrong final report. Trace logs show the config was read correctly and the MCP tool returned valid crash data.
 
 Question: Where should debugging focus next? (Select ONE response.)
 
-- A) Re-read the config file again, since that's the earliest step.
+- A) Re-read the config file again from scratch, since that was the earliest step in the pipeline.
 - B) Just the final error message, since the human can re-investigate from there.
-- C) The network connection to the MCP server, since that's the most complex step.
-- D) The step between receiving the MCP tool's valid data and producing the final report — since inputs were confirmed correct, the divergence is most likely in how the model reasoned about or transformed that data afterward.
+- C) The network connection to the MCP server, since that's the most complex step in the whole pipeline.
+- D) The step between receiving the MCP tool's valid data and producing the final report.
 
 **Question 54.** A build-status tool integration fails, and the team can't tell whether the failure is in their integration code (bad auth, wrong endpoint) or in something the model did.
 
 Question: What is the correct first diagnostic step? (Select ONE response.)
 
-- A) Isolate whether the failure occurred at the integration layer (the actual API/tool call and its response) versus in the model's output, by examining the trace of exactly what was sent and received.
-- B) Assume it's a model problem and rewrite the prompt.
-- C) Switch to a different model to see if the failure persists.
-- D) Restart the CI runner and try again.
+- A) Isolate whether the failure is at the integration layer or the model's output, via the trace.
+- B) Assume it's a model problem from the start and rewrite the prompt.
+- C) Switch to an entirely different model to see if the failure persists.
+- D) Restart the CI runner and try the same job again, without adding any structured diagnostic hook.
 
 **Question 55.** The internal crash-reporting system needs to be reachable from Claude Code sessions across the whole mobile engineering org, not just one team, and should be maintainable by the platform team independently of any consuming app.
 
 Question: What is the best approach? (Select ONE response.)
 
-- A) Have each team paste crash-reporting API credentials into their own CLAUDE.md.
-- B) Build an MCP server exposing crash-reporting operations as tools, shared across the org and maintained centrally by the platform team.
+- A) Have each team paste crash-reporting API credentials directly into their own local CLAUDE.md file.
+- B) Build an MCP server exposing crash-reporting tools, shared and maintained centrally.
 - C) Hard-code crash-reporting logic into each team's custom skill separately.
 - D) Ask each engineer to curl the crash-reporting API manually when needed.
 
@@ -546,46 +546,46 @@ Question: What is the best approach? (Select ONE response.)
 
 Question: What is the second capability an example of? (Select ONE response.)
 
-- A) An MCP tool, functionally identical to `check_build`.
-- B) A built-in tool provided by the platform automatically.
-- C) An MCP resource — content/catalog visibility distinct from a tool, which performs an action.
-- D) A Claude Code Skill.
+- A) An MCP tool, functionally identical to `check_build` in what it lets an agent do.
+- B) A built-in tool the platform provides automatically, without any server-side configuration needed.
+- C) An MCP resource — content visibility distinct from a tool, which performs an action.
+- D) A Claude Code Skill packaged and distributed alongside the build-status server.
 
 **Question 57.** The team is deciding whether the app-store-metadata MCP server should run as a local stdio process per developer machine or as a remote, centrally-hosted network service.
 
 Question: What should drive the decision? (Select ONE response.)
 
-- A) stdio servers are always faster regardless of deployment context.
+- A) stdio servers are always faster than a network-hosted server, regardless of context.
 - B) MCP only supports one communication pattern, so there's no real decision to make.
-- C) Remote servers cannot expose tools, only resources.
-- D) Where the server needs to run relative to the client and who needs access — local stdio for per-machine/local resources, remote/network hosting for centrally shared services accessed by many clients.
+- C) Remote servers cannot expose tools at all under this design, only read-only resources.
+- D) Where the server needs to run and who needs access — local for per-machine, remote for shared services.
 
 **Question 58.** The team's `.mcp.json`, committed to the mobile repository, currently has an app-store-metadata API token hardcoded directly in the file.
 
 Question: What is the correct fix? (Select ONE response.)
 
-- A) Move the token to environment-variable expansion (e.g., `${APP_STORE_TOKEN}`) so the secret isn't committed to version control.
-- B) Base64-encode the token before committing it.
-- C) Move `.mcp.json` to a private repository instead.
-- D) Rotate the token weekly instead of removing it from the file.
+- A) Move the token to environment-variable expansion so the secret is not committed.
+- B) Base64-encode the token before committing it, so it isn't stored as plain text.
+- C) Move `.mcp.json` to a private repository instead, token still embedded as-is.
+- D) Rotate the token weekly going forward, instead of removing it from the file.
 
 **Question 59.** An audit finds that several MCP-connected tools grant broader access (e.g., full crash-log deletion rights) than any actual mobile engineering workflow requires.
 
 Question: What is the correct remediation, consistent with least-privilege principles? (Select ONE response.)
 
-- A) Add logging so misuse can be reviewed after the fact.
-- B) Add a confirmation prompt before any deletion.
-- C) Leave access as-is, since no misuse has been observed yet.
-- D) Scope the exposed tools down to only the operations actual workflows require, removing unnecessary broad capabilities rather than just monitoring them.
+- A) Add logging around the broad access so misuse can be reviewed after the fact.
+- B) Add a confirmation prompt before any deletion operation the tool can perform.
+- C) Leave access as-is for now, since no actual misuse has been observed yet.
+- D) Scope the exposed tools down to only the operations actual workflows require.
 
 **Question 60.** The platform team is choosing how to expose a one-off, team-specific release-notes generator used by a single small mobile squad, versus a widely-reused build-status-checking capability needed by every agent across the org.
 
 Question: How should each be built? (Select ONE response.)
 
-- A) The one-off release-notes generator as a Skill or custom tool scoped to that team; the widely-reused build-status capability as an MCP server or built-in tool maintained centrally and shared across all consuming agents.
-- B) Both as MCP servers, since MCP is the correct choice for any shared capability.
-- C) Both as Skills, since Skills are always reusable.
-- D) Both as built-in tools, since built-in tools require the least setup.
+- A) A one-off Skill scoped to that team; a centrally maintained MCP server for the shared capability.
+- B) Both as MCP servers, since MCP is described as the correct choice for any shared capability across teams.
+- C) Both as Skills, since Skills are described as always reusable across any number of teams.
+- D) Both as built-in tools, since they are described as requiring the least setup of any option.
 
 ---
 # Answer Key
@@ -594,7 +594,7 @@ Question: How should each be built? (Select ONE response.)
 
 ---
 
-**1. D** — The tool-use loop must key off `stop_reason`: continue while it's `"tool_use"` (execute tools, return results), stop at `"end_turn"`. Text-based signals (A) are unreliable; a fixed cap (B) is a backstop, not a primary mechanism; response length (C) says nothing about completion.
+**1. D** — The tool-use loop must key off `stop_reason`: continue while it's `"tool_use"` (execute tools, return results), stop at `"end_turn"`. Text-based signals (A) are unreliable; a fixed call cap (B) is a backstop, not a primary mechanism; response length (C) says nothing about completion.
 
 **2. A** — Tool results must be appended as a `tool_result` block referencing the `tool_use` ID, then the full conversation resent so the model can incorporate the result. B keeps the result from the model entirely. C misuses the system prompt for turn-level data. D discards conversational state unnecessarily.
 
@@ -652,7 +652,7 @@ Question: How should each be built? (Select ONE response.)
 
 **29. A** — Standard SDLC discipline (review, testing, version control) still applies to the application code around an LLM integration; the model doesn't replace engineering rigor for the surrounding system.
 
-**30. C** — Resetting at natural task boundaries prevents unrelated context from bleeding into new work. B doesn't address cross-contamination; D is unreliable prompt-level mitigation; A is an unrelated lever.
+**30. C** — Resetting at natural task boundaries prevents unrelated context from bleeding into new work. B doesn't address cross-contamination; D is unreliable prompt-level mitigation restated on a timer; A is an unrelated lever.
 
 **31. D** — High-volume, low-complexity tasks fit a fast, low-latency tier, with a higher tier reserved for flagged complex cases — matching capability to actual task difficulty. A and B overspend by default; C ignores task fit.
 
@@ -666,9 +666,9 @@ Question: How should each be built? (Select ONE response.)
 
 **36. B** — Stable instructions first (ideally cacheable) and variable content after both improves consistency (clear role separation) and caching. A, C, and D misstate the effect of ordering.
 
-**37. B** — Actual per-request token usage (input/output/cache) attributed per ticket gives an accurate cost picture; estimates from average length or unrelated proxies (A, C, D) don't.
+**37. B** — Actual per-request token usage (input/output/cache) attributed per ticket gives an accurate cost picture; estimates from latency, call counts, or character counts (A, C, D) don't.
 
-**38. B** — LLM output is inherently non-deterministic; exact-string-match evals are the wrong tool and will fail intermittently even on correct output. A and D misdiagnose the cause; C doesn't address the underlying non-determinism.
+**38. B** — LLM output is inherently non-deterministic; exact-string-match evals are the wrong tool and will fail intermittently even on correct output. A and D misdiagnose the cause; C doesn't address the underlying non-determinism, since no reference string can enumerate every valid phrasing.
 
 **39. A** — Pruning to relevant fields before data enters the prompt removes the actual bloat at its source. B and C work around the symptom without reducing waste; D adds cost and complexity for a problem solvable by simple filtering.
 
@@ -708,7 +708,7 @@ Question: How should each be built? (Select ONE response.)
 
 **57. D** — The choice should follow where the server needs to run and who needs access — local stdio for per-machine resources, remote hosting for centrally shared services. A, B, and C are false or oversimplified claims about MCP's communication patterns.
 
-**58. A** — Environment-variable expansion keeps the secret out of the version-controlled file while the file itself remains shareable. B is easily reversible obfuscation, not real protection; C and D don't remove the exposed credential from history or ongoing risk.
+**58. A** — Environment-variable expansion keeps the secret out of the version-controlled file while the file itself remains shareable. B is easily reversible obfuscation, not real protection; C and D don't remove the exposed credential from the file or ongoing risk.
 
 **59. D** — Least privilege means removing unnecessary capability, not just observing or slowing its misuse. A and B are detective/compensating controls; C accepts unnecessary risk.
 
