@@ -993,7 +993,12 @@ def show_card_list() -> None:
     console.print(table)
 
 
-def review_cards(pack_id: str | None = None, topic: str | None = None, limit: int | None = None) -> None:
+def review_cards(
+    pack_id: str | None = None,
+    topic: str | None = None,
+    limit: int | None = None,
+    domain: str | None = None,
+) -> None:
     packs = load_study_packs()
     progress = load_progress()
     pack = find_by_id(packs, pack_id) if pack_id else choose_study_pack(packs, "Choose flashcards")
@@ -1002,6 +1007,8 @@ def review_cards(pack_id: str | None = None, topic: str | None = None, limit: in
         raise SystemExit(1)
 
     cards = list(pack["flashcards"])
+    if domain:
+        cards = [card for card in cards if (card.get("domain") or "").lower() == domain.lower()]
     if topic:
         cards = [card for card in cards if card["topic"].lower() == topic.lower()]
     elif cards:
@@ -1025,10 +1032,13 @@ def review_cards(pack_id: str | None = None, topic: str | None = None, limit: in
     try:
         for index, card in enumerate(cards, start=1):
             console.rule(f"Card {index} / {len(cards)}")
-            console.print(f"[bold]{card['topic']}[/]\n")
+            heading = f"{card['domain']} · {card['topic']}" if card.get("domain") else card["topic"]
+            console.print(f"[bold]{heading}[/]\n")
             console.print(Markdown(card["question"]))
             pause("Reveal answer")
             console.print(Markdown(f"**Answer:** {card['answer']}"))
+            if card.get("example"):
+                console.print(Markdown(f"**Example:** {card['example']}"))
             rating = select_one(
                 "Rate recall",
                 [

@@ -13,6 +13,7 @@ export function FlashcardsPage() {
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [onlyUnknown, setOnlyUnknown] = useState(false)
+  const [domainFilter, setDomainFilter] = useState('all')
 
   const progress = useMemo(
     () => loadProgress(trackId as TrackId),
@@ -20,9 +21,14 @@ export function FlashcardsPage() {
     [trackId, progressVersion],
   )
 
-  const visibleCards = onlyUnknown
-    ? cards.filter((card) => !progress.flashcards[card.id]?.known)
-    : cards
+  const domains = useMemo(
+    () => Array.from(new Set(cards.map((c) => c.domain).filter((d): d is string => !!d))).sort(),
+    [cards],
+  )
+
+  const visibleCards = cards
+    .filter((card) => !onlyUnknown || !progress.flashcards[card.id]?.known)
+    .filter((card) => domainFilter === 'all' || card.domain === domainFilter)
 
   const card = visibleCards[Math.min(index, Math.max(visibleCards.length - 1, 0))]
   const knownCount = cards.filter((c) => progress.flashcards[c.id]?.known).length
@@ -61,19 +67,39 @@ export function FlashcardsPage() {
             {knownCount}/{cards.length} known
           </p>
         </div>
-        <label className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide text-bone-dim">
-          <input
-            type="checkbox"
-            checked={onlyUnknown}
-            onChange={(event) => {
-              setOnlyUnknown(event.target.checked)
-              setIndex(0)
-              setFlipped(false)
-            }}
-            className="accent-brass"
-          />
-          unknown only
-        </label>
+        <div className="flex items-center gap-4">
+          {domains.length > 0 && (
+            <select
+              value={domainFilter}
+              onChange={(event) => {
+                setDomainFilter(event.target.value)
+                setIndex(0)
+                setFlipped(false)
+              }}
+              className="rounded border border-bone-dim/40 bg-transparent px-2 py-1 font-mono text-xs uppercase tracking-wide text-bone-dim"
+            >
+              <option value="all">all domains</option>
+              {domains.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
+          <label className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide text-bone-dim">
+            <input
+              type="checkbox"
+              checked={onlyUnknown}
+              onChange={(event) => {
+                setOnlyUnknown(event.target.checked)
+                setIndex(0)
+                setFlipped(false)
+              }}
+              className="accent-brass"
+            />
+            unknown only
+          </label>
+        </div>
       </div>
 
       {visibleCards.length === 0 ? (
@@ -88,11 +114,17 @@ export function FlashcardsPage() {
             className="ticket mt-8 flex min-h-64 w-full flex-col items-center justify-center px-8 py-10 text-center transition-transform"
           >
             <p className="font-mono text-[11px] uppercase tracking-widest text-brass">
+              {card.domain ? `${card.domain} · ` : ''}
               {card.topic} · {flipped ? 'answer' : 'question'}
             </p>
             <p className="mt-4 font-display text-xl text-bone">
               {flipped ? card.answer : card.question}
             </p>
+            {flipped && card.example && (
+              <p className="mt-4 font-mono text-sm text-bone-dim">
+                <span className="text-brass">Example:</span> {card.example}
+              </p>
+            )}
             <p className="mt-6 font-mono text-[11px] uppercase tracking-widest text-bone-dim/60">
               tap to {flipped ? 'see question' : 'reveal answer'}
             </p>
