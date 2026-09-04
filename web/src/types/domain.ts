@@ -63,6 +63,8 @@ export interface Flashcard {
   pack_id: string
   topic: string
   question: string
+  example?: string | null
+  domain?: string | null
   answer: string
 }
 

@@ -24,6 +24,8 @@ class Flashcard:
     topic: str
     question: str
     answer: str
+    example: str | None = None
+    domain: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -32,6 +34,8 @@ class Flashcard:
             "topic": self.topic,
             "question": self.question,
             "answer": self.answer,
+            "example": self.example,
+            "domain": self.domain,
         }
 
 

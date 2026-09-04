@@ -88,9 +88,20 @@ def parse_flashcards(path: Path, pack_id: str) -> list[Flashcard]:
 
         for card_index, qa in enumerate(qa_pairs, start=1):
             question = qa.group(1).strip()
-            answer = qa.group(2).strip()
-            if not question or not answer:
+            answer_block = qa.group(2).strip()
+            if not question or not answer_block:
                 continue
+            label_match = re.search(r"(?ms)^(?:Domain|Example):", answer_block)
+            if label_match:
+                answer = answer_block[: label_match.start()].strip()
+                tail = answer_block[label_match.start() :]
+            else:
+                answer = answer_block
+                tail = ""
+            domain_match = re.search(r"(?ms)^Domain:\s*(.*?)(?=^(?:Domain|Example):|\Z)", tail)
+            example_match = re.search(r"(?ms)^Example:\s*(.*?)(?=^(?:Domain|Example):|\Z)", tail)
+            domain = domain_match.group(1).strip() or None if domain_match else None
+            example = example_match.group(1).strip() or None if example_match else None
             card_number = len(cards) + 1
             cards.append(
                 Flashcard(
@@ -99,6 +110,8 @@ def parse_flashcards(path: Path, pack_id: str) -> list[Flashcard]:
                     topic=topic,
                     question=question,
                     answer=answer,
+                    example=example,
+                    domain=domain,
                 )
             )
 

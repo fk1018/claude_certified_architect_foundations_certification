@@ -234,9 +234,10 @@ def cards_review(
     pack_id: Optional[str] = typer.Option(None, "--pack", "-p", help="Study pack ID."),
     topic: Optional[str] = typer.Option(None, "--topic", "-t", help="Exact flashcard topic."),
     limit: Optional[int] = typer.Option(None, "--limit", "-n", min=1, help="Maximum cards to review."),
+    domain: Optional[str] = typer.Option(None, "--domain", "-d", help="Exam domain code, e.g. D1."),
 ) -> None:
     """Review flashcards interactively."""
-    review_cards(pack_id=pack_id, topic=topic, limit=limit)
+    review_cards(pack_id=pack_id, topic=topic, limit=limit, domain=domain)
 
 
 @quiz_app.command("start")
